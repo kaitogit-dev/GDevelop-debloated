@@ -207,7 +207,6 @@ import {
 } from './PreviewState';
 import { type HotReloadPreviewButtonProps } from '../HotReload/HotReloadPreviewButton';
 import HotReloadLogsDialog from '../HotReload/HotReloadLogsDialog';
-import { useDiscordRichPresence } from '../Utils/UpdateDiscordRichPresence';
 import { delay } from '../Utils/Delay';
 import useNewProjectDialog from './UseNewProjectDialog';
 import { findAndLogProjectPreviewErrors } from '../Utils/ProjectErrorsChecker';
@@ -1174,8 +1173,6 @@ const MainFrame = (props: Props): React.MixedElement => {
         }
       );
   };
-
-  useDiscordRichPresence(currentProject);
 
   const openAskAi: (?OpenAskAiOptions) => void = React.useCallback(() => {}, []);
 

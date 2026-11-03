@@ -30,7 +30,6 @@ const { setupMcpStdioPipe } = require('./CliMcpServerPipe');
 const { waitForPreviousCliInstance } = require('./CliInstanceLock');
 const throttle = require('lodash.throttle');
 const { findLocalIp } = require('./Utils/LocalNetworkIpFinder');
-const setUpDiscordRichPresence = require('./DiscordRichPresence');
 const {
   downloadLocalFile,
   saveLocalFileFromArrayBuffer,
@@ -891,8 +890,6 @@ app.on('ready', async function() {
       info,
     });
   });
-
-  setUpDiscordRichPresence(ipcMain);
 
   const NPM_SCRIPT_COMMAND_FAILED_MESSAGE = 'Command failed!';
 
