@@ -1,0 +1,51 @@
+name: Build desktop
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            target: windows
+            args: --win nsis zip --x64
+          - os: ubuntu-22.04
+            target: linux
+            args: --linux AppImage zip --x64
+    env:
+      GD_PORTABLE_BUILD: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: newIDE/app/package-lock.json
+      - name: Install editor
+        run: npm ci
+        working-directory: newIDE/app
+      - name: Install desktop
+        run: npm ci
+        working-directory: newIDE/electron-app
+      - name: Package desktop
+        run: npm run build -- ${{ matrix.args }} --publish never
+        working-directory: newIDE/electron-app
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: GDevelop-debloated-${{ matrix.target }}
+          path: |
+            newIDE/electron-app/dist/*.exe
+            newIDE/electron-app/dist/*.zip
+            newIDE/electron-app/dist/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
