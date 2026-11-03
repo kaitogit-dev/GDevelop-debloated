@@ -477,7 +477,6 @@ const EditorTabsPane: React.ComponentType<{
     projectPath,
     triggerNpmScript,
     onRequestPaneClose,
-    rightPaneDrawerOpen,
   } = props;
 
   const toolbarRef = React.useRef<?ToolbarInterface>(null);

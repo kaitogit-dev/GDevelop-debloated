@@ -5376,7 +5376,6 @@ const MainFrame = (props: Props): React.MixedElement => {
       hasUnsavedChanges,
       i18n,
       closeProject,
-      showConfirmation,
     ]
   );
 
