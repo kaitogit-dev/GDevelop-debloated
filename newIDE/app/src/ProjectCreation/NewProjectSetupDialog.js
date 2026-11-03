@@ -57,13 +57,12 @@ import { getUserProductPurchaseUsageType } from '../AssetStore/ProductPageHelper
 import { useOnlineStatus } from '../Utils/OnlineStatus';
 import PrivateGameTemplateOwnedInformationPage from '../AssetStore/PrivateGameTemplates/PrivateGameTemplateOwnedInformationPage';
 import { ExampleStoreContext } from '../AssetStore/ExampleStore/ExampleStoreContext';
+import { getConnectedDriveAccount } from '../ProjectsStorage/GoogleDriveStorageProvider/GoogleDriveApi';
 import EmptyMessage from '../UI/EmptyMessage';
 import { BundleStoreContext } from '../AssetStore/Bundles/BundleStoreContext';
 import { type CreateProjectResult } from '../Utils/UseCreateProject';
-import { isNativeMobileApp } from '../Utils/Platform';
 import { type OpenAskAiOptions } from '../AiGeneration/Utils';
 
-const electron = optionalRequire('electron');
 const remote = optionalRequire('@electron/remote');
 const app = remote ? remote.app : null;
 
@@ -252,6 +251,9 @@ const NewProjectSetupDialog = ({
       const cloudStorageProvider = storageProviders.find(
         ({ internalName }) => internalName === 'Cloud'
       );
+      const driveStorageProvider = storageProviders.find(
+        ({ internalName }) => internalName === 'GoogleDrive'
+      );
       const preferredStorageProvider = storageProviders.find(
         ({ internalName }) =>
           internalName === values.newProjectsDefaultStorageProviderName
@@ -261,6 +263,7 @@ const NewProjectSetupDialog = ({
       // This is to avoid a new user to be messing with account creation.
       if (!!currentlyRunningInAppTutorial) {
         if (localFileStorageProvider) return localFileStorageProvider;
+        if (driveStorageProvider) return driveStorageProvider;
         return emptyStorageProvider;
       }
 
@@ -270,20 +273,20 @@ const NewProjectSetupDialog = ({
         if (preferredStorageProvider) return preferredStorageProvider;
         if (localFileStorageProvider) return localFileStorageProvider;
         if (cloudStorageProvider) return cloudStorageProvider;
+        if (driveStorageProvider) return driveStorageProvider;
         return emptyStorageProvider;
       }
 
       // Try to use the storage provider stored in user preferences.
-      if (values.newProjectsDefaultStorageProviderName === 'Empty')
-        return emptyStorageProvider;
-      if (preferredStorageProvider) return preferredStorageProvider;
+      if (
+        preferredStorageProvider &&
+        preferredStorageProvider.internalName !== 'Empty'
+      )
+        return preferredStorageProvider;
 
-      // If preferred storage provider not found, push Cloud storage provider if user authenticated.
-      if (authenticated) {
-        if (cloudStorageProvider) return cloudStorageProvider;
-      }
-
+      if (driveStorageProvider) return driveStorageProvider;
       if (localFileStorageProvider) return localFileStorageProvider;
+      if (authenticated && cloudStorageProvider) return cloudStorageProvider;
 
       return emptyStorageProvider;
     }
@@ -430,17 +433,13 @@ const NewProjectSetupDialog = ({
     selectedExampleShortHeader ||
     !!selectedGameTemplatePurchaseUsageType;
 
-  // On the local app, prefer to always have something saved so that the user is not blocked.
-  // On the web-app, allow to create a project without saving it, unless a private game template is selected
-  // (as it requires to save the project to the cloud to be able to use it).
-  const shouldAllowCreatingProjectWithoutSaving =
-    !electron && !selectedPrivateGameTemplateListingData;
-
   const shouldAllowCreatingProject =
     !isLoading &&
     !needUserAuthenticationForStorage &&
     !hasTooManyCloudProjects &&
-    (hasSelectedAStorageProvider || shouldAllowCreatingProjectWithoutSaving);
+    hasSelectedAStorageProvider &&
+    (storageProviderForCreation.internalName !== 'GoogleDrive' ||
+      !!getConnectedDriveAccount());
 
   const onCreateGameClick = React.useCallback(
     async (i18n: I18nType) => {
@@ -824,19 +823,6 @@ const NewProjectSetupDialog = ({
                         disabled={availableStorageProvider.disabled}
                       />
                     ))}
-                  {!electron && !isNativeMobileApp() && (
-                    <SelectOption
-                      value={'FakeLocalFile'}
-                      label={t`Save on your computer: download GDevelop desktop app`}
-                      disabled
-                    />
-                  )}
-                  {shouldAllowCreatingProjectWithoutSaving && (
-                    <SelectOption
-                      value={emptyStorageProvider.internalName}
-                      label={t`Don't save this project now`}
-                    />
-                  )}
                 </SelectField>
                 {!needUserAuthenticationForStorage &&
                   storageProviderForCreation.renderNewProjectSaveAsLocationChooser &&
