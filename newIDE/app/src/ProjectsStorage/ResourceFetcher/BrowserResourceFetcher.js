@@ -6,6 +6,7 @@ import {
   type FetchAllProjectResourcesFunction,
 } from './index';
 import CloudStorageProvider from '../CloudStorageProvider';
+import GoogleDriveStorageProvider from '../GoogleDriveStorageProvider';
 import { moveUrlResourcesToCloudFilesIfPrivate } from '../CloudStorageProvider/CloudResourceFetcher';
 import UrlStorageProvider from '../UrlStorageProvider';
 import { fetchRelativeResourcesToFullUrls } from '../UrlStorageProvider/UrlResourceFetcher';
@@ -13,6 +14,7 @@ import { fetchRelativeResourcesToFullUrls } from '../UrlStorageProvider/UrlResou
 const fetchers: {
   [string]: FetchAllProjectResourcesFunction,
 } = {
+  [GoogleDriveStorageProvider.internalName]: async () => ({ erroredResources: [] }),
   // The Cloud file storage provider fetches the resources that are
   // private URLs by downloading them and reuploading them to the cloud.
   // $FlowFixMe[incompatible-type]
