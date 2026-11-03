@@ -48,28 +48,32 @@ const getLegacyExamples = async (): Promise<AllExamples> => {
   return { exampleShortHeaders, filters };
 };
 
+const getPublicExamples = async (baseUrl: string): Promise<AllExamples> => {
+  const [exampleShortHeaders, filters] = await Promise.all([
+    retryIfFailed({ times: 2 }, async () => {
+      const result = await axios.get(`${baseUrl}/exampleShortHeaders.json`);
+      return result.data;
+    }),
+    retryIfFailed({ times: 2 }, async () => {
+      const result = await axios.get(`${baseUrl}/filters.json`);
+      return result.data;
+    }),
+  ]);
+  if (!Array.isArray(exampleShortHeaders) || !exampleShortHeaders.length) {
+    throw new Error('The public example catalog is empty.');
+  }
+  return { exampleShortHeaders, filters };
+};
+
 export const listAllExamples = async (): Promise<AllExamples> => {
   try {
-    const [exampleShortHeaders, filters] = await Promise.all([
-      retryIfFailed({ times: 2 }, async () => {
-        const result = await axios.get(
-          `${PUBLIC_EXAMPLES_DATABASE}/exampleShortHeaders.json`
-        );
-        return result.data;
-      }),
-      retryIfFailed({ times: 2 }, async () => {
-        const result = await axios.get(
-          `${PUBLIC_EXAMPLES_DATABASE}/filters.json`
-        );
-        return result.data;
-      }),
-    ]);
-    if (!Array.isArray(exampleShortHeaders) || !exampleShortHeaders.length) {
-      throw new Error('The public example catalog is empty.');
-    }
-    return { exampleShortHeaders, filters };
+    return await getPublicExamples('./examples-database');
   } catch (error) {
-    return getLegacyExamples();
+    try {
+      return await getPublicExamples(PUBLIC_EXAMPLES_DATABASE);
+    } catch (secondError) {
+      return getLegacyExamples();
+    }
   }
 };
 
