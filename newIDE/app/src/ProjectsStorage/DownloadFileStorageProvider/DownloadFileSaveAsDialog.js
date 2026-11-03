@@ -6,7 +6,6 @@ import FlatButton from '../../UI/FlatButton';
 import RaisedButton from '../../UI/RaisedButton';
 import { Line } from '../../UI/Grid';
 import { ColumnStackLayout } from '../../UI/Layout';
-import Window from '../../Utils/Window';
 import {
   BlobDownloadUrlHolder,
   openBlobDownloadUrl,
@@ -278,8 +277,7 @@ export default function DownloadFileSaveAsDialog({
       <ColumnStackLayout noMargin>
         <Text>
           <Trans>
-            You can download the file of your game to continue working on it
-            using the full GDevelop version:
+            Download a copy of your game and its resources:
           </Trans>
         </Text>
         <Line noMargin expand justifyContent="center">
@@ -292,7 +290,7 @@ export default function DownloadFileSaveAsDialog({
                     openBlobDownloadUrl(blobDownloadUrl, 'gdevelop-game.zip')
                   }
                   label={
-                    <Trans>Download the compressed game and resources</Trans>
+                    <Trans>Download project archive</Trans>
                   }
                 />
               )}
