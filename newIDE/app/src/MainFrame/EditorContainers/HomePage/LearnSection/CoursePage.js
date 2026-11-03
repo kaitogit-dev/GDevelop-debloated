@@ -1,5 +1,4 @@
 // @flow
-import { IS_AI_ASSISTANT_DISABLED } from '../../../../Utils/DebloatConfig';
 
 import * as React from 'react';
 import { type I18n as I18nType } from '@lingui/core';
@@ -20,7 +19,6 @@ import { textEllipsisStyle } from '../../../../UI/TextEllipsis';
 import { Column, LargeSpacer, Line, Spacer } from '../../../../UI/Grid';
 import Lock from '../../../../UI/CustomSvgIcons/Lock';
 import { ColumnStackLayout, LineStackLayout } from '../../../../UI/Layout';
-import Help from '../../../../UI/CustomSvgIcons/Help';
 import RaisedButton from '../../../../UI/RaisedButton';
 import GDevelopThemeContext from '../../../../UI/Theme/GDevelopThemeContext';
 import { useResponsiveWindowSize } from '../../../../UI/Responsive/ResponsiveWindowMeasurer';
@@ -80,7 +78,6 @@ const styles = {
   },
   navIcon: { fontSize: 20, display: 'flex' },
   footer: { height: 150 },
-  askAQuestionContainer: { display: 'flex', padding: 8 },
   progress: { borderRadius: 4, height: 5 },
   mobileStickyFooter: {
     position: 'sticky',
@@ -136,9 +133,8 @@ const CoursePage = ({
   purchasingCourseListingData,
   setPurchasingCourseListingData,
   simulateAppStoreProduct,
-  onOpenAskAi,
 }: Props): React.Node => {
-  const { profile, subscription } = React.useContext(AuthenticatedUserContext);
+  const { profile } = React.useContext(AuthenticatedUserContext);
   const userId = (profile && profile.id) || null;
   const {
     values: { language },
@@ -311,10 +307,6 @@ const CoursePage = ({
     [scrollingContainerRef]
   );
 
-  const isStudentAccount =
-    !!subscription &&
-    !!subscription.benefitsFromEducationPlan &&
-    !subscription.isTeacher;
 
   return (
     <I18n>
@@ -456,35 +448,6 @@ const CoursePage = ({
                       <Spacer />
                       {tableOfContent}
                     </Paper>
-                    {!IS_AI_ASSISTANT_DISABLED && !isStudentAccount && (
-                      <Paper
-                        background="light"
-                        style={styles.askAQuestionContainer}
-                      >
-                        <ColumnStackLayout expand noMargin>
-                          <LineStackLayout
-                            expand
-                            alignItems="center"
-                            noMargin
-                            justifyContent="center"
-                          >
-                            <Help />
-                            <Text noMargin>
-                              <Trans>Do you need any help?</Trans>
-                            </Text>
-                          </LineStackLayout>
-                          <RaisedButton
-                            primary
-                            label={<Trans>Ask the AI</Trans>}
-                            onClick={() =>
-                              onOpenAskAi({
-                                aiRequestId: null,
-                              })
-                            }
-                          />
-                        </ColumnStackLayout>
-                      </Paper>
-                    )}
                   </div>
                 </div>
               )}

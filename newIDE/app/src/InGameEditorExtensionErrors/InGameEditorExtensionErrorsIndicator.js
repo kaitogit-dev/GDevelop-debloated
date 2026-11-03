@@ -1,12 +1,10 @@
 // @flow
-import { IS_AI_ASSISTANT_DISABLED } from '../Utils/DebloatConfig';
 import * as React from 'react';
 import { Trans, Plural } from '@lingui/macro';
 import Popover from '@material-ui/core/Popover';
 import Paper from '../UI/Paper';
 import Text from '../UI/Text';
 import StatusChip from '../UI/StatusChip';
-import RaisedButton from '../UI/RaisedButton';
 import FlatButton from '../UI/FlatButton';
 import { ColumnStackLayout, LineStackLayout } from '../UI/Layout';
 import WarningFilled from '../UI/CustomSvgIcons/WarningFilled';
@@ -19,7 +17,6 @@ import classes from './InGameEditorExtensionErrorsIndicator.module.css';
 type Props = {|
   errors: Array<InGameEditorExtensionError>,
   isFromStore: (error: InGameEditorExtensionError) => boolean,
-  onAskAiToFix: () => void,
   onDismiss: () => void,
 |};
 
@@ -30,13 +27,11 @@ type Props = {|
 const InGameEditorExtensionErrorsIndicator = ({
   errors,
   isFromStore,
-  onAskAiToFix,
   onDismiss,
 }: Props): React.Node => {
   const [anchorElement, setAnchorElement] = React.useState<?HTMLElement>(null);
   if (errors.length === 0) return null;
   // The AI can't change store extensions: their errors are sent as crash reports.
-  const hasErrorsFixableByAi = errors.some(error => !isFromStore(error));
 
   return (
     <>
@@ -113,16 +108,6 @@ const InGameEditorExtensionErrorsIndicator = ({
                     onDismiss();
                   }}
                 />
-                {!IS_AI_ASSISTANT_DISABLED && hasErrorsFixableByAi && (
-                  <RaisedButton
-                    color="ai"
-                    label={<Trans>Ask the AI to fix</Trans>}
-                    onClick={() => {
-                      setAnchorElement(null);
-                      onAskAiToFix();
-                    }}
-                  />
-                )}
               </LineStackLayout>
             </ColumnStackLayout>
           </div>

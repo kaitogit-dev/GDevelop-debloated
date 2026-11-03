@@ -102,7 +102,6 @@ import {
 } from './EditorTabs/EditorTabsRenaming';
 import {
   isInGameEditorExtensionErrorFromStore,
-  getAskAiToFixInGameEditorExtensionErrorsText,
   buildInGameEditorExtensionErrorGameCrashReport,
 } from '../InGameEditorExtensionErrors';
 import { createGameCrashReport } from '../Utils/GDevelopServices/Analytics';
@@ -6330,14 +6329,6 @@ const MainFrame = (props: Props): React.MixedElement => {
             errors={inGameEditorExtensionErrors}
             isFromStore={error =>
               isInGameEditorExtensionErrorFromStore(currentProject, error)
-            }
-            onAskAiToFix={() =>
-              openAskAi({
-                prefilledUserRequest: getAskAiToFixInGameEditorExtensionErrorsText(
-                  inGameEditorExtensionErrors
-                ),
-                prefillInCurrentChat: true,
-              })
             }
             onDismiss={clearInGameEditorExtensionErrors}
           />

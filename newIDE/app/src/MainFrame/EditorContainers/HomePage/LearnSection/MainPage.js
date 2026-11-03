@@ -1,5 +1,4 @@
 // @flow
-import { IS_AI_ASSISTANT_DISABLED } from '../../../../Utils/DebloatConfig';
 import * as React from 'react';
 import { I18n } from '@lingui/react';
 import { Line, Column, Spacer } from '../../../../UI/Grid';
@@ -23,8 +22,6 @@ import Upload from '../../../../UI/CustomSvgIcons/Upload';
 import AuthenticatedUserContext from '../../../../Profile/AuthenticatedUserContext';
 import { PrivateTutorialViewDialog } from '../../../../AssetStore/PrivateTutorials/PrivateTutorialViewDialog';
 import RaisedButton from '../../../../UI/RaisedButton';
-import Help from '../../../../UI/CustomSvgIcons/Help';
-import Paper from '../../../../UI/Paper';
 import CourseCard from './CourseCard';
 import GDevelopThemeContext from '../../../../UI/Theme/GDevelopThemeContext';
 import Link from '../../../../UI/Link';
@@ -88,12 +85,11 @@ const MainPage = ({
   onSelectBundle,
   getCourseCompletion,
   getCourseChapterCompletion,
-  onOpenAskAi,
   onOpenNewProjectSetupDialog,
   onSelectPrivateGameTemplateListingData,
   onSelectExampleShortHeader,
 }: Props): React.Node => {
-  const { limits, subscription } = React.useContext(AuthenticatedUserContext);
+  const { limits } = React.useContext(AuthenticatedUserContext);
   const gdevelopTheme = React.useContext(GDevelopThemeContext);
   const paletteType = gdevelopTheme.palette.type;
   const paperDarkBackgroundColor = gdevelopTheme.paper.backgroundColor.dark;
@@ -110,10 +106,6 @@ const MainPage = ({
     !!limits &&
     !!limits.capabilities.classrooms &&
     limits.capabilities.classrooms.hidePremiumProducts;
-  const isStudentAccount =
-    !!subscription &&
-    !!subscription.benefitsFromEducationPlan &&
-    !subscription.isTeacher;
 
   const displayedCourses = React.useMemo(
     () => {
@@ -394,39 +386,6 @@ const MainPage = ({
                   cellHeight="auto"
                   spacing={ITEMS_SPACING * 2}
                 >
-                  {!IS_AI_ASSISTANT_DISABLED && !isStudentAccount && (
-                    <GridListTile
-                      cols={1}
-                      style={{ background: 'transparent' }}
-                    >
-                      <Paper
-                        background="light"
-                        style={{ display: 'flex', height: '100%' }}
-                      >
-                        <Column expand>
-                          <Line expand alignItems="flex-start">
-                            <Help />
-                            <ColumnStackLayout expand alignItems="flex-start">
-                              <Text noMargin size="block-title" align="left">
-                                <Trans>Blocked on GDevelop?</Trans>
-                              </Text>
-                              <RaisedButton
-                                size="large"
-                                color="success"
-                                label={<Trans>Ask the AI</Trans>}
-                                rightIcon={<ArrowRight />}
-                                onClick={() =>
-                                  onOpenAskAi({
-                                    aiRequestId: null,
-                                  })
-                                }
-                              />
-                            </ColumnStackLayout>
-                          </Line>
-                        </Column>
-                      </Paper>
-                    </GridListTile>
-                  )}
                   {helpItems.map((helpItem, index) => (
                     <GridListTile key={index}>
                       <CardWidget
