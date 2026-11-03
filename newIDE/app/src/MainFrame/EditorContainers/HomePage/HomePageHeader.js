@@ -5,14 +5,12 @@ import { t } from '@lingui/macro';
 import TranslateIcon from '@material-ui/icons/Translate';
 import { Column, Line } from '../../../UI/Grid';
 import { LineStackLayout } from '../../../UI/Layout';
-import UserChip from '../../../UI/User/UserChip';
+import GoogleDriveAccountButton from '../../../UI/User/GoogleDriveAccountButton';
 import TextButton from '../../../UI/TextButton';
 import IconButton from '../../../UI/IconButton';
-import NotificationChip from '../../../UI/User/NotificationChip';
 import { useResponsiveWindowSize } from '../../../UI/Responsive/ResponsiveWindowMeasurer';
 import SaveProjectIcon from '../../SaveProjectIcon';
 import HistoryIcon from '../../../UI/CustomSvgIcons/History';
-import AuthenticatedUserContext from '../../../Profile/AuthenticatedUserContext';
 import { type FileMetadata } from '../../../ProjectsStorage';
 
 type Props = {|
@@ -29,13 +27,11 @@ type Props = {|
 export const HomePageHeader = ({
   hasProject,
   onOpenVersionHistory,
-  onOpenProfile,
   onOpenLanguageDialog,
   onSave,
   canSave,
 }: Props): React.Node => {
   const { isMobile } = useResponsiveWindowSize();
-  const { profile } = React.useContext(AuthenticatedUserContext);
 
   return (
     <I18n>
@@ -70,8 +66,7 @@ export const HomePageHeader = ({
           </Column>
           <Column>
             <LineStackLayout noMargin alignItems="center">
-              <UserChip onOpenProfile={onOpenProfile} />
-              {profile && <NotificationChip />}
+              <GoogleDriveAccountButton />
               {isMobile ? (
                 <IconButton size="small" onClick={onOpenLanguageDialog}>
                   <TranslateIcon fontSize="small" />
