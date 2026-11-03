@@ -18,7 +18,6 @@ import {
   getTabsToDisplay,
 } from './HomePageMenu';
 import { Toolbar, ToolbarGroup } from '../../../UI/Toolbar';
-import AuthenticatedUserContext from '../../../Profile/AuthenticatedUserContext';
 import { SECTION_DESKTOP_SPACING } from './SectionContainer';
 import Text from '../../../UI/Text';
 
@@ -97,8 +96,7 @@ const HomePageMenuBar = ({
   const { isMobile, isMediumScreen } = useResponsiveWindowSize();
   const isMobileOrSmallScreen = isMobile || isMediumScreen;
   const gdevelopTheme = React.useContext(GDevelopThemeContext);
-  const { limits } = React.useContext(AuthenticatedUserContext);
-  const tabsToDisplay = getTabsToDisplay({ limits });
+  const tabsToDisplay = getTabsToDisplay();
   const largeScreenOnlyButtons: {
     label: React.Node,
     getIcon: GetIconFunction,
