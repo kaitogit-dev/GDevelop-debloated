@@ -1,4 +1,4 @@
-name: Build desktop
+name: Build web
 
 on:
   push:
@@ -9,22 +9,12 @@ permissions:
   contents: read
 
 jobs:
-  package:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-2022
-            target: windows
-            args: --win nsis zip --x64
-          - os: ubuntu-22.04
-            target: linux
-            args: --linux AppImage zip --x64
+  build:
+    runs-on: ubuntu-22.04
     env:
-      GD_PORTABLE_BUILD: 'true'
       NODE_OPTIONS: --max-old-space-size=6144
       GENERATE_SOURCEMAP: 'false'
+      REACT_APP_GOOGLE_DRIVE_CLIENT_ID: ${{ vars.GOOGLE_DRIVE_CLIENT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,19 +25,13 @@ jobs:
       - name: Install editor
         run: npm ci
         working-directory: newIDE/app
-      - name: Install desktop
-        run: npm ci
-        working-directory: newIDE/electron-app
-      - name: Package desktop
-        run: npm run build -- ${{ matrix.args }} --publish never
-        working-directory: newIDE/electron-app
-      - name: Upload installer
+      - name: Build website
+        run: npm run build
+        working-directory: newIDE/app
+      - name: Upload website
         uses: actions/upload-artifact@v4
         with:
-          name: GDevelop-debloated-${{ matrix.target }}
-          path: |
-            newIDE/electron-app/dist/*.exe
-            newIDE/electron-app/dist/*.zip
-            newIDE/electron-app/dist/*.AppImage
+          name: GDevelop-debloated-web
+          path: newIDE/app/build/
           if-no-files-found: error
           retention-days: 14
