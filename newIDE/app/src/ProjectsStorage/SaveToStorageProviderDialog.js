@@ -13,24 +13,12 @@ import {
   checkIfHasTooManyCloudProjects,
   MaxProjectCountAlertMessage,
 } from '../MainFrame/EditorContainers/HomePage/CreateSection/MaxProjectCountAlertMessage';
-import Computer from '../UI/CustomSvgIcons/Computer';
-import { isNativeMobileApp } from '../Utils/Platform';
-import optionalRequire from '../Utils/OptionalRequire';
-const electron = optionalRequire('electron');
 
 type Props = {|
   storageProviders: Array<StorageProvider>,
   onChooseProvider: StorageProvider => void,
   onClose: () => void,
 |};
-
-const fakeLocalFileStorageProvider: StorageProvider = {
-  internalName: 'LocalFile',
-  name: t`Save to computer with GDevelop desktop app`,
-  disabled: true,
-  renderIcon: props => <Computer fontSize={props.size} />,
-  createOperations: () => ({}),
-};
 
 const SaveToStorageProviderDialog = ({
   onClose,
@@ -80,12 +68,6 @@ const SaveToStorageProviderDialog = ({
                 )}
             </React.Fragment>
           ))}
-        {!electron && !isNativeMobileApp() && (
-          <StorageProviderListItem
-            onChooseProvider={onChooseProvider}
-            storageProvider={fakeLocalFileStorageProvider}
-          />
-        )}
       </List>
     </Dialog>
   );
