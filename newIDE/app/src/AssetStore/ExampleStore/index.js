@@ -5,14 +5,9 @@ import SearchBar from '../../UI/SearchBar';
 import { Column, Line, Spacer } from '../../UI/Grid';
 import { type ExampleShortHeader } from '../../Utils/GDevelopServices/Example';
 import { ExampleStoreContext } from './ExampleStoreContext';
-import {
-  sendExampleDetailsOpened,
-  sendGameTemplateInformationOpened,
-} from '../../Utils/Analytics/EventSender';
-import { t, Trans } from '@lingui/macro';
+import { sendExampleDetailsOpened } from '../../Utils/Analytics/EventSender';
+import { t } from '@lingui/macro';
 import { type PrivateGameTemplateListingData } from '../../Utils/GDevelopServices/Shop';
-import AuthenticatedUserContext from '../../Profile/AuthenticatedUserContext';
-import { PrivateGameTemplateStoreContext } from '../PrivateGameTemplates/PrivateGameTemplateStoreContext';
 import GridList from '@material-ui/core/GridList';
 import { getExampleAndTemplateTiles } from '../../MainFrame/EditorContainers/HomePage/CreateSection/utils';
 import BackgroundText from '../../UI/BackgroundText';
@@ -88,76 +83,43 @@ const ExampleStore = ({
   hideSearch,
   limitRowsTo,
   showLoadMore,
-  hidePremiumTemplates,
   disabled,
 }: Props): React.Node => {
   const MAX_COLUMNS = getColumnsFromWindowSize('xlarge', true);
   const MAX_SECTION_WIDTH = (LARGE_WIDGET_SIZE + 2 * 5) * MAX_COLUMNS; // widget size + 5 padding per side
   const { windowSize, isLandscape } = useResponsiveWindowSize();
 
-  const { receivedGameTemplates } = React.useContext(AuthenticatedUserContext);
   const {
     exampleShortHeaders: allExampleShortHeaders,
     exampleShortHeadersSearchResults,
     fetchExamplesAndFilters,
+    error: examplesError,
     searchText: exampleStoreSearchText,
     setSearchText: setExampleStoreSearchText,
   } = React.useContext(ExampleStoreContext);
-  const {
-    fetchGameTemplates,
-    exampleStore: {
-      privateGameTemplateListingDatasSearchResults,
-      setSearchText: setGameTemplateStoreSearchText,
-    },
-  } = React.useContext(PrivateGameTemplateStoreContext);
   const [localSearchText, setLocalSearchText] = React.useState(
     exampleStoreSearchText
   );
   const gdevelopTheme = React.useContext(GDevelopThemeContext);
   const columnsCount = getColumnsFromWindowSize(windowSize, isLandscape);
 
-  // We search in both examples and game templates stores.
   const setSearchText = React.useCallback(
     (searchText: string) => {
-      if (searchText.length < 2) {
-        // Prevent searching with less than 2 characters, as it does not return any results.
-        setExampleStoreSearchText('');
-        setGameTemplateStoreSearchText('');
-      } else {
-        setExampleStoreSearchText(searchText);
-        setGameTemplateStoreSearchText(searchText);
-      }
+      setExampleStoreSearchText(searchText.length < 2 ? '' : searchText);
       setLocalSearchText(searchText);
     },
-    [setExampleStoreSearchText, setGameTemplateStoreSearchText]
+    [setExampleStoreSearchText]
   );
 
-  const fetchGameTemplatesAndExamples = React.useCallback(
-    () => {
-      fetchGameTemplates();
-      fetchExamplesAndFilters();
-    },
-    [fetchGameTemplates, fetchExamplesAndFilters]
-  );
-
-  // Load examples and game templates on mount.
-  React.useEffect(
-    () => {
-      fetchGameTemplatesAndExamples();
-    },
-    [fetchGameTemplatesAndExamples]
-  );
+  React.useEffect(() => {
+    fetchExamplesAndFilters();
+  }, [fetchExamplesAndFilters]);
 
   const resultTiles: React.Node[] = React.useMemo(
     () => {
       return getExampleAndTemplateTiles({
-        receivedGameTemplates,
-        privateGameTemplateListingDatas:
-          privateGameTemplateListingDatasSearchResults && !hidePremiumTemplates
-            ? privateGameTemplateListingDatasSearchResults.filter(
-                ({ item }) => !onlyShowGames || gameFilter(item)
-              )
-            : [],
+        receivedGameTemplates: [],
+        privateGameTemplateListingDatas: [],
         exampleShortHeaders: exampleShortHeadersSearchResults
           ? exampleShortHeadersSearchResults
               .filter(({ item }) => !onlyShowGames || gameFilter(item))
@@ -168,21 +130,7 @@ const ExampleStore = ({
                   noStartingPointFilter(allExampleShortHeaders, item)
               )
           : [],
-        onSelectPrivateGameTemplateListingData: privateGameTemplateListingData => {
-          const priceForUsageType = privateGameTemplateListingData.prices.find(
-            price => price.usageType === 'default'
-          );
-          sendGameTemplateInformationOpened({
-            gameTemplateName: privateGameTemplateListingData.name,
-            gameTemplateId: privateGameTemplateListingData.id,
-            source: 'examples-list',
-            priceValue: priceForUsageType && priceForUsageType.value,
-            priceCurrency: priceForUsageType && priceForUsageType.currency,
-          });
-          onSelectPrivateGameTemplateListingData(
-            privateGameTemplateListingData
-          );
-        },
+        onSelectPrivateGameTemplateListingData: () => {},
         onSelectExampleShortHeader: exampleShortHeader => {
           sendExampleDetailsOpened(exampleShortHeader.slug);
           onSelectExampleShortHeader(exampleShortHeader);
@@ -196,17 +144,13 @@ const ExampleStore = ({
       });
     },
     [
-      receivedGameTemplates,
-      privateGameTemplateListingDatasSearchResults,
       exampleShortHeadersSearchResults,
-      onSelectPrivateGameTemplateListingData,
       onSelectExampleShortHeader,
       i18n,
       gdevelopTheme,
       onlyShowGames,
       hideStartingPoints,
       allExampleShortHeaders,
-      hidePremiumTemplates,
       exampleStoreSearchText,
       disabled,
     ]
@@ -248,10 +192,19 @@ const ExampleStore = ({
           <Column noMargin expand justifyContent="center">
             <Spacer />
             <BackgroundText>
-              <Trans>
-                No results returned for your search. Try something else!
-              </Trans>
+              {examplesError
+                ? 'Could not load the public templates.'
+                : !allExampleShortHeaders
+                ? 'Loading templates...'
+                : 'No templates match your search.'}
             </BackgroundText>
+            {examplesError ? (
+              <FlatButton
+                primary
+                label="Retry loading templates"
+                onClick={fetchExamplesAndFilters}
+              />
+            ) : null}
           </Column>
         ) : (
           <ColumnStackLayout noMargin expand>
