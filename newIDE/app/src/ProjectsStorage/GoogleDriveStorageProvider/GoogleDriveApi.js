@@ -10,6 +10,16 @@ let identityScriptPromise = null;
 let accessToken = '';
 let accessTokenExpiresAt = 0;
 let connectedAccount = null;
+const accountListeners: Set<() => void> = new Set();
+
+export const subscribeToGoogleDriveAccount = (
+  listener: () => void
+): (() => void) => {
+  accountListeners.add(listener);
+  return () => {
+    accountListeners.delete(listener);
+  };
+};
 
 export const getGoogleDriveClientId = (): string =>
   (process.env.REACT_APP_GOOGLE_DRIVE_CLIENT_ID ||
@@ -85,18 +95,30 @@ export const connectGoogleDrive = async (
   }
 
   const tokenResponse = await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(
+        new Error(
+          'Google sign-in did not respond. Check that popups are allowed and try again.'
+        )
+      );
+    }, 90000);
+    const fail = error => {
+      clearTimeout(timeout);
+      reject(error);
+    };
     const client = google.accounts.oauth2.initTokenClient({
       client_id: trimmedClientId,
       scope: DRIVE_SCOPE,
       callback: response => {
         if (!response || response.error || !response.access_token) {
-          reject(new Error(response?.error_description || response?.error || 'Google authorization failed.'));
+          fail(new Error(response?.error_description || response?.error || 'Google authorization failed.'));
           return;
         }
+        clearTimeout(timeout);
         resolve(response);
       },
       error_callback: response => {
-        reject(new Error(response?.message || response?.type || 'Google authorization popup was closed.'));
+        fail(new Error(response?.message || response?.type || 'Google authorization popup was closed.'));
       },
     });
     client.requestAccessToken({ prompt: 'select_account' });
@@ -108,6 +130,7 @@ export const connectGoogleDrive = async (
   const response = await driveFetch(`${DRIVE_API}/about?fields=user(emailAddress,displayName)`);
   const account = await response.json();
   connectedAccount = account.user?.emailAddress || account.user?.displayName || 'Google Drive';
+  accountListeners.forEach(listener => listener());
   return connectedAccount;
 };
 
