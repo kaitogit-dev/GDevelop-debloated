@@ -23,6 +23,8 @@ jobs:
             args: --linux AppImage zip --x64
     env:
       GD_PORTABLE_BUILD: 'true'
+      NODE_OPTIONS: --max-old-space-size=6144
+      GENERATE_SOURCEMAP: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
