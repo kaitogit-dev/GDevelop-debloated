@@ -33,44 +33,62 @@ export type AllExamples = {|
   filters: Filters,
 |};
 
-export const listAllExamples = async (): Promise<AllExamples> => {
-  // $FlowFixMe[underconstrained-implicit-instantiation]
+const PUBLIC_EXAMPLES_DATABASE =
+  'https://resources.gdevelop-app.com/examples-database';
+
+const getLegacyExamples = async (): Promise<AllExamples> => {
   const response = await axios.get(`${GDevelopAssetApi.baseUrl}/example`, {
-    params: {
-      // Could be changed according to the editor environment, but keep
-      // reading from the "live" data for now.
-      environment: 'live',
-    },
+    params: { environment: 'live' },
   });
   const { exampleShortHeadersUrl, filtersUrl } = response.data;
-
   const [exampleShortHeaders, filters] = await Promise.all([
-    retryIfFailed(
-      { times: 2 },
-      // $FlowFixMe[underconstrained-implicit-instantiation]
-      async () => (await axios.get(exampleShortHeadersUrl)).data
-    ),
-    // $FlowFixMe[underconstrained-implicit-instantiation]
-    retryIfFailed({ times: 2 }, async () => (await axios.get(filtersUrl)).data),
+    axios.get(exampleShortHeadersUrl).then(result => result.data),
+    axios.get(filtersUrl).then(result => result.data),
   ]);
+  return { exampleShortHeaders, filters };
+};
 
-  const allExamples: AllExamples = {
-    exampleShortHeaders,
-    filters,
-  };
-
-  return allExamples;
+export const listAllExamples = async (): Promise<AllExamples> => {
+  try {
+    const [exampleShortHeaders, filters] = await Promise.all([
+      retryIfFailed({ times: 2 }, async () => {
+        const result = await axios.get(
+          `${PUBLIC_EXAMPLES_DATABASE}/exampleShortHeaders.json`
+        );
+        return result.data;
+      }),
+      retryIfFailed({ times: 2 }, async () => {
+        const result = await axios.get(
+          `${PUBLIC_EXAMPLES_DATABASE}/filters.json`
+        );
+        return result.data;
+      }),
+    ]);
+    if (!Array.isArray(exampleShortHeaders) || !exampleShortHeaders.length) {
+      throw new Error('The public example catalog is empty.');
+    }
+    return { exampleShortHeaders, filters };
+  } catch (error) {
+    return getLegacyExamples();
+  }
 };
 
 export const getExample = async (
   exampleShortHeader: ExampleShortHeader
 ): Promise<Example> => {
-  // $FlowFixMe[underconstrained-implicit-instantiation]
-  const response = await axios.get(
-    `${GDevelopAssetApi.baseUrl}/example-v2/${exampleShortHeader.id}`
-  );
-
-  return response.data;
+  try {
+    const result = await axios.get(
+      `${PUBLIC_EXAMPLES_DATABASE}/examples/${encodeURIComponent(
+        exampleShortHeader.id
+      )}.json`
+    );
+    return result.data;
+  } catch (error) {
+    const response = await axios.get(
+      `${GDevelopAssetApi.baseUrl}/example-v2/${exampleShortHeader.id}`
+    );
+    return response.data;
+  }
 };
 
 export const getUserExampleShortHeaders = async (
