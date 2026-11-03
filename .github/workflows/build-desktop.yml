@@ -29,6 +29,12 @@ jobs:
       - name: Install editor
         run: npm ci
         working-directory: newIDE/app
+      - name: Include free example catalog
+        run: |
+          mkdir -p newIDE/app/public/examples-database
+          curl --fail --location --retry 3 --silent --show-error https://resources.gdevelop-app.com/examples-database/exampleShortHeaders.json --output newIDE/app/public/examples-database/exampleShortHeaders.json
+          curl --fail --location --retry 3 --silent --show-error https://resources.gdevelop-app.com/examples-database/filters.json --output newIDE/app/public/examples-database/filters.json
+          node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('newIDE/app/public/examples-database/exampleShortHeaders.json')); if(!Array.isArray(a)||a.length===0)process.exit(1)"
       - name: Build website
         run: npm run build
         working-directory: newIDE/app
