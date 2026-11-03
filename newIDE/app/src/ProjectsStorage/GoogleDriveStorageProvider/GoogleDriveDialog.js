@@ -19,8 +19,8 @@ type Props = {|
   mode: 'open' | 'save',
   suggestedName?: string,
   onCancel: () => void,
-  onOpen?: DriveProjectFile => void,
-  onSave?: string => void,
+  onOpen?: (DriveProjectFile) => void,
+  onSave?: (string) => void,
 |};
 
 export default function GoogleDriveDialog({
