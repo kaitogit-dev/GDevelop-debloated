@@ -64,7 +64,7 @@ const getRequestedTab = (routeArguments: RouteArguments): HomeTab | null => {
     routeArguments['initial-dialog'] === 'asset-store' || // Compatibility with old links
     routeArguments['initial-dialog'] === 'store' // New way of opening the store
   ) {
-    return 'shop';
+    return 'create';
   } else if (
     [
       'games-dashboard',
@@ -74,11 +74,11 @@ const getRequestedTab = (routeArguments: RouteArguments): HomeTab | null => {
   ) {
     return 'create';
   } else if (routeArguments['initial-dialog'] === 'education') {
-    return 'team-view';
+    return 'create';
   } else if (routeArguments['initial-dialog'] === 'play') {
     return 'play';
   } else if (routeArguments['initial-dialog'] === 'learn') {
-    return 'learn';
+    return 'create';
   }
 
   return null;
@@ -336,17 +336,10 @@ export const HomePage: React.ComponentType<Props> = React.memo<Props>(
       );
 
       const { isMobile } = useResponsiveWindowSize();
-      const {
-        values: { showCreateSectionByDefault },
-      } = React.useContext(PreferencesContext);
       const tabRequestedAtOpening = React.useRef<HomeTab | null>(
         getRequestedTab(routeArguments)
       );
-      const initialTab = tabRequestedAtOpening.current
-        ? tabRequestedAtOpening.current
-        : showCreateSectionByDefault
-        ? 'create'
-        : 'learn';
+      const initialTab = tabRequestedAtOpening.current || 'create';
 
       const [activeTab, setActiveTab] = React.useState<HomeTab>(initialTab);
 
