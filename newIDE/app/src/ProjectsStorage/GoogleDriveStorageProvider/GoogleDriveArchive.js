@@ -1,5 +1,6 @@
 // @flow
 import { archiveFiles, openArchive } from '../../Utils/BrowserArchiver';
+import { downloadUrlsToBlobs } from '../../Utils/BlobDownloader';
 import { serializeToJSObject } from '../../Utils/Serializer';
 import { isBlobURL, isURL, parseLocalFilePathOrExtensionFromMetadata } from '../../ResourcesList/ResourceUtils';
 import { sanitizeFilename } from '../../Utils/Filename';
@@ -63,11 +64,14 @@ export const archiveProjectForGoogleDrive = async (
       continue;
     }
 
-    const response = await fetch(resourceUrl);
-    if (!response.ok) {
-      throw new Error(`Cannot save resource "${resource.name}" (${response.status}).`);
+    const downloads = await downloadUrlsToBlobs({
+      urlContainers: [{ url: resourceUrl }],
+      onProgress: () => {},
+    });
+    const { blob, error } = downloads[0];
+    if (!blob || error) {
+      throw new Error(`Cannot save resource "${resource.name}": ${error ? error.message : 'unknown download error'}`);
     }
-    const blob = await response.blob();
     const originalResource = resourcesByName.getResource(resource.name);
     const { extension } = parseLocalFilePathOrExtensionFromMetadata(originalResource);
     const filename = sanitizeFilename(resource.name || 'resource');
