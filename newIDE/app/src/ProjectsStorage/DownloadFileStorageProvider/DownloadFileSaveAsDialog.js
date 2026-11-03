@@ -258,12 +258,6 @@ export default function DownloadFileSaveAsDialog({
       title={<Trans>Download a copy</Trans>}
       actions={[
         <FlatButton
-          key="download"
-          label={<Trans>Download GDevelop desktop version</Trans>}
-          primary={false}
-          onClick={() => Window.openExternalURL('http://gdevelop.io')}
-        />,
-        <FlatButton
           key="close"
           label={<Trans>Close</Trans>}
           primary={false}
