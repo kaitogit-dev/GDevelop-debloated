@@ -38,12 +38,6 @@ type Props = {|
   projectScopedContainersAccessor: ProjectScopedContainersAccessor,
 |};
 
-type TimeSettings = {|
-  minDuration: number,
-  logoAndProgressFadeInDuration: number,
-  logoAndProgressLogoFadeInDelay: number,
-|};
-
 const forcedLogo: TimeSettings = {
   minDuration: 2,
   logoAndProgressFadeInDuration: 0.2,

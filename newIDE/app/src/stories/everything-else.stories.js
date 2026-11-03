@@ -2417,7 +2417,6 @@ storiesOf('ProjectPropertiesDialog/LoadingScreenEditor', module)
       loadingScreen={testProject.project.getLoadingScreen()}
       watermark={testProject.project.getWatermark()}
       onLoadingScreenUpdated={action('onLoadingscreenUpdated')}
-      onChangeSubscription={action('onChangeSubscription')}
       project={testProject.project}
       resourceManagementProps={fakeResourceManagementProps}
       projectScopedContainersAccessor={

@@ -1,5 +1,4 @@
 // @flow
-import { Trans } from '@lingui/macro';
 
 import * as React from 'react';
 import Debugger from '../../Debugger';
@@ -15,29 +14,16 @@ import {
   type WillDeleteObjectChanges,
   type ExtensionsOutsideEditorChanges,
 } from '../../EditorFunctions/OutsideEditorChanges';
-import SubscriptionChecker, {
-  type SubscriptionCheckerInterface,
-} from '../../Profile/Subscription/SubscriptionChecker';
 import { type ObjectWithContext } from '../../ObjectsList/EnumerateObjects';
 import {
   setEditorHotReloadNeeded,
   type HotReloadSteps,
 } from '../../EmbeddedGame/EmbeddedGameFrame';
 
-type State = {|
-  subscriptionChecked: boolean,
-|};
-
 export class DebuggerEditorContainer extends React.Component<
-  RenderEditorContainerProps,
-  State
+  RenderEditorContainerProps
 > {
   editor: ?Debugger;
-  _subscriptionChecker: ?SubscriptionCheckerInterface;
-  // $FlowFixMe[missing-local-annot]
-  state = {
-    subscriptionChecked: false,
-  };
 
   shouldComponentUpdate(nextProps: RenderEditorContainerProps): any {
     // We stop updates when the component is inactive.
@@ -123,50 +109,17 @@ export class DebuggerEditorContainer extends React.Component<
     // No thing to be done.
   }
 
-  // To be updated, see https://reactjs.org/docs/react-component.html#unsafe_componentwillreceiveprops.
-  UNSAFE_componentWillReceiveProps() {
-    this._checkUserHasSubscription();
-  }
-
-  componentDidMount() {
-    this._checkUserHasSubscription();
-  }
-
-  _checkUserHasSubscription() {
-    if (
-      this._subscriptionChecker &&
-      this.props.isActive &&
-      !this.state.subscriptionChecked
-    ) {
-      this._subscriptionChecker.checkUserHasSubscription();
-      this.setState({
-        subscriptionChecked: true,
-      });
-    }
-  }
-
   render(): any {
     const { project, previewDebuggerServer } = this.props;
     if (!project || !previewDebuggerServer) return null;
 
     return (
-      <React.Fragment>
-        <Debugger
-          project={project}
-          setToolbar={this.props.setToolbar}
-          previewDebuggerServer={previewDebuggerServer}
-          ref={editor => (this.editor = editor)}
-        />
-        <SubscriptionChecker
-          ref={subscriptionChecker =>
-            (this._subscriptionChecker = subscriptionChecker)
-          }
-          id="Debugger"
-          title={<Trans>Debugger</Trans>}
-          placementId="debugger"
-          mode="try"
-        />
-      </React.Fragment>
+      <Debugger
+        project={project}
+        setToolbar={this.props.setToolbar}
+        previewDebuggerServer={previewDebuggerServer}
+        ref={editor => (this.editor = editor)}
+      />
     );
   }
 }
