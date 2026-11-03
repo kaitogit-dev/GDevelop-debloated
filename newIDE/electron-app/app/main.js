@@ -28,10 +28,6 @@ const { loadExternalEditorWindow } = require('./LocalExternalEditorWindow');
 const { load, registerGdideProtocol } = require('./Utils/UrlLoader');
 const { setupMcpStdioPipe } = require('./CliMcpServerPipe');
 const { waitForPreviousCliInstance } = require('./CliInstanceLock');
-const {
-  createLiveMcpServer,
-  makeLiveMcpServerSettingsStore,
-} = require('./LiveMcpServer');
 const throttle = require('lodash.throttle');
 const { findLocalIp } = require('./Utils/LocalNetworkIpFinder');
 const setUpDiscordRichPresence = require('./DiscordRichPresence');
@@ -100,8 +96,6 @@ let mainWindows = new Set();
 let mainWindow = null; // Primary window reference for backwards compatibility
 let windowCounter = 0; // Counter for creating unique session partitions
 // The window an agent connecting to the live MCP server is bound to.
-let lastFocusedMainWindow = null;
-let liveMcpServer = null;
 
 const devTools = !!args['dev-tools'];
 
@@ -324,8 +318,6 @@ function createNewWindow(windowArgs = args) {
     // Remove from tracked windows
     mainWindows.delete(newWindow);
     clearWindowFileIdentifier(windowId);
-    if (lastFocusedMainWindow === newWindow) lastFocusedMainWindow = null;
-    if (liveMcpServer) liveMcpServer.onWindowClosed(windowId);
 
     // If this was the primary window, set a new primary
     if (isPrimaryWindow) {
@@ -433,66 +425,6 @@ function createNewWindow(windowArgs = args) {
   return newWindow;
 }
 
-const setupLiveMcpServer = () => {
-  const settingsStore = makeLiveMcpServerSettingsStore(app.getPath('userData'));
-  let lastError = null;
-  liveMcpServer = createLiveMcpServer({
-    getTargetWindow: () =>
-      lastFocusedMainWindow && !lastFocusedMainWindow.isDestroyed()
-        ? lastFocusedMainWindow
-        : mainWindow,
-    log,
-  });
-
-  app.on('browser-window-focus', (_event, window) => {
-    if (mainWindows.has(window)) lastFocusedMainWindow = window;
-  });
-
-  const getStatus = () => {
-    const settings = settingsStore.read();
-    const port = liveMcpServer.getPort();
-    return {
-      enabled: settings.enabled,
-      port,
-      url: port ? `http://127.0.0.1:${port}/mcp` : null,
-      token: settings.token,
-      error: lastError,
-    };
-  };
-
-  const applySettings = async () => {
-    const settings = settingsStore.read();
-    lastError = null;
-    if (!settings.enabled) {
-      await liveMcpServer.stop();
-      return;
-    }
-    try {
-      await liveMcpServer.start({ port: settings.port, token: settings.token });
-    } catch (error) {
-      lastError = error.message;
-      log.error('[MCP] Could not start the live editor server:', error);
-    }
-  };
-
-  ipcMain.on('mcp-live-send', (_event, payload) =>
-    liveMcpServer.onWindowResponse(payload)
-  );
-  ipcMain.handle('mcp-live-server-get-status', () => getStatus());
-  ipcMain.handle('mcp-live-server-set-enabled', async (_event, enabled) => {
-    settingsStore.write({ ...settingsStore.read(), enabled: !!enabled });
-    await applySettings();
-    return getStatus();
-  });
-  ipcMain.handle('mcp-live-server-reset-token', async () => {
-    settingsStore.write({ ...settingsStore.read(), token: null });
-    await applySettings();
-    return getStatus();
-  });
-
-  applySettings();
-};
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 app.on('ready', async function() {
@@ -579,8 +511,6 @@ app.on('ready', async function() {
     if (window) setWindowFileIdentifier(window.id, fileIdentifier);
   });
 
-  // Not in a CLI process (like `--mcp`): it has no editor the user works in.
-  if (!isCliRunCommand) setupLiveMcpServer();
 
   ipcMain.handle('install-cli-in-path', async () => {
     // Inside an AppImage, process.execPath points into a transient mount that

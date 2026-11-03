@@ -13,7 +13,6 @@ import { useScreenType } from '../UI/Responsive/ScreenTypeMeasurer';
 import TabsTitlebarTooltip from './TabsTitlebarTooltip';
 import Window from '../Utils/Window';
 import { isMacLike } from '../Utils/Platform';
-import ConnectedAgentsIndicator from '../LiveMcpServer/ConnectedAgentsIndicator';
 
 const WINDOW_DRAGGABLE_PART_CLASS_NAME = 'title-bar-draggable-part';
 const WINDOW_NON_DRAGGABLE_PART_CLASS_NAME = 'title-bar-non-draggable-part';
@@ -32,10 +31,6 @@ const styles = {
     // with the project manager icon.
     width: 34,
     height: 34,
-  },
-  connectedAgentsContainer: {
-    marginBottom: 8,
-    marginLeft: 4,
   },
 };
 
@@ -166,14 +161,6 @@ export default function TabsTitlebar({
         </IconButton>
       )}
       {renderTabs(onEditorTabHovered, onEditorTabClosing)}
-      {isRightMostPane && (
-        <div
-          style={styles.connectedAgentsContainer}
-          className={WINDOW_NON_DRAGGABLE_PART_CLASS_NAME}
-        >
-          <ConnectedAgentsIndicator />
-        </div>
-      )}
       {isRightMostPane && <TitleBarRightSafeMargins />}
       {tooltipData && tooltipData.element.isConnected && (
         <TabsTitlebarTooltip

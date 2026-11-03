@@ -1,6 +1,6 @@
 // @flow
 import * as React from 'react';
-import { Column, Line, Spacer } from '../../../UI/Grid';
+import { Column, Line } from '../../../UI/Grid';
 import { useResponsiveWindowSize } from '../../../UI/Responsive/ResponsiveWindowMeasurer';
 import Text from '../../../UI/Text';
 import ArrowLeft from '../../../UI/CustomSvgIcons/ArrowLeft';
@@ -8,9 +8,6 @@ import TextButton from '../../../UI/TextButton';
 import { Trans } from '@lingui/macro';
 import Paper from '../../../UI/Paper';
 import { ColumnStackLayout, LineStackLayout } from '../../../UI/Layout';
-import { AnnouncementsFeed } from '../../../AnnouncementsFeed';
-import { AnnouncementsFeedContext } from '../../../AnnouncementsFeed/AnnouncementsFeedContext';
-import AuthenticatedUserContext from '../../../Profile/AuthenticatedUserContext';
 import Chip from '../../../UI/Chip';
 
 export const SECTION_DESKTOP_SPACING = 20;
@@ -91,12 +88,10 @@ const SectionContainer: React.ComponentType<{
       renderFooter,
       noScroll,
       applyTopSpacingAsMarginOnChildrenContainer,
-      showUrgentAnnouncements,
     },
     ref
   ) => {
     const { isMobile } = useResponsiveWindowSize();
-    const { announcements } = React.useContext(AnnouncementsFeedContext);
     const containerStyle: {|
       paddingTop: number,
       paddingLeft: number,
@@ -127,23 +122,10 @@ const SectionContainer: React.ComponentType<{
           : SECTION_DESKTOP_SPACING
         : 0,
     };
-    const authenticatedUser = React.useContext(AuthenticatedUserContext);
-
-    const shouldHideAnnouncements =
-      !!authenticatedUser.limits &&
-      !!authenticatedUser.limits.capabilities.classrooms &&
-      authenticatedUser.limits.capabilities.classrooms.hideAnnouncements;
-
     return (
       <Column expand useFullHeight noMargin>
         <Paper style={paperStyle} square background="dark" ref={ref}>
           <div style={childrenContainerStyle}>
-            {showUrgentAnnouncements && !shouldHideAnnouncements && (
-              <>
-                <AnnouncementsFeed canClose level="urgent" hideLoader />
-                {announcements && announcements.length > 0 && <Spacer />}
-              </>
-            )}
             {backAction && (
               <Line>
                 <TextButton

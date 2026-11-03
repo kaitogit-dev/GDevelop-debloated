@@ -30,7 +30,6 @@ import { BehaviorStoreStateProvider } from '../AssetStore/BehaviorStore/Behavior
 import { ObjectStoreStateProvider } from '../AssetStore/ObjectStoreContext';
 import { TutorialStateProvider } from '../Tutorial/TutorialContext';
 import AlertProvider from '../UI/Alert/AlertProvider';
-import { AnnouncementsFeedStateProvider } from '../AnnouncementsFeed/AnnouncementsFeedContext';
 import PrivateAssetsAuthorizationProvider from '../AssetStore/PrivateAssets/PrivateAssetsAuthorizationProvider';
 import InAppTutorialProvider from '../InAppTutorial/InAppTutorialProvider';
 import { SubscriptionProvider } from '../Profile/Subscription/SubscriptionContext';
@@ -44,7 +43,6 @@ import { ProductLicenseStoreStateProvider } from '../AssetStore/ProductLicense/P
 import { MarketingPlansStoreStateProvider } from '../MarketingPlans/MarketingPlansStoreContext';
 import { CourseStoreStateProvider } from '../Course/CourseStoreContext';
 import { Resource3DPreviewProvider } from '../ResourcesList/ResourcePreview/Resource3DPreviewContext';
-import { LiveMcpServerProvider } from '../LiveMcpServer/LiveMcpServerContext';
 
 type Props = {|
   authentication: Authentication,
@@ -125,19 +123,15 @@ const Providers = ({
                                                                   i18n={i18n}
                                                                 >
                                                                   <TutorialStateProvider>
-                                                                    <AnnouncementsFeedStateProvider>
-                                                                      <PrivateAssetsAuthorizationProvider>
-                                                                        <Resource3DPreviewProvider>
-                                                                          <LiveMcpServerProvider>
-                                                                            {children(
-                                                                              {
-                                                                                i18n,
-                                                                              }
-                                                                            )}
-                                                                          </LiveMcpServerProvider>
-                                                                        </Resource3DPreviewProvider>
-                                                                      </PrivateAssetsAuthorizationProvider>
-                                                                    </AnnouncementsFeedStateProvider>
+                                                                    <PrivateAssetsAuthorizationProvider>
+                                                                      <Resource3DPreviewProvider>
+                                                                        {children(
+                                                                          {
+                                                                            i18n,
+                                                                          }
+                                                                        )}
+                                                                      </Resource3DPreviewProvider>
+                                                                    </PrivateAssetsAuthorizationProvider>
                                                                   </TutorialStateProvider>
                                                                 </ObjectStoreStateProvider>
                                                               </BehaviorStoreStateProvider>

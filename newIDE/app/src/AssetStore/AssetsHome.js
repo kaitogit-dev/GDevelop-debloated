@@ -21,9 +21,6 @@ import {
 import AuthenticatedUserContext from '../Profile/AuthenticatedUserContext';
 import { CategoryTile } from './ShopTiles';
 import { useDebounce } from '../Utils/UseDebounce';
-import PromotionsSlideshow from '../Promotions/PromotionsSlideshow';
-import { ColumnStackLayout } from '../UI/Layout';
-import { EarnCredits } from '../GameDashboard/Wallet/EarnCredits';
 import { LARGE_WIDGET_SIZE } from '../MainFrame/EditorContainers/HomePage/CardWidget';
 import {
   getBundleTiles,
@@ -206,8 +203,6 @@ export const AssetsHome: React.ComponentType<{
       onCategorySelection,
       openedShopCategory,
       onlyShowAssets,
-      displayPromotions,
-      onOpenProfile,
     }: Props,
     ref
   ) => {
@@ -216,8 +211,6 @@ export const AssetsHome: React.ComponentType<{
       receivedAssetPacks,
       receivedGameTemplates,
       receivedBundles,
-      badges,
-      achievements,
     } = React.useContext(AuthenticatedUserContext);
 
     const scrollView = React.useRef<?ScrollViewInterface>(null);
@@ -374,22 +367,6 @@ export const AssetsHome: React.ComponentType<{
             </GridList>
           </>
         )}
-        {displayPromotions && !openedShopCategory ? (
-          <ColumnStackLayout noMargin>
-            <Text size="block-title">
-              <Trans>Promotions + Earn credits</Trans>
-            </Text>
-
-            <PromotionsSlideshow />
-            {onOpenProfile && (
-              <EarnCredits
-                achievements={achievements}
-                badges={badges}
-                onOpenProfile={onOpenProfile}
-              />
-            )}
-          </ColumnStackLayout>
-        ) : null}
         {allBundleTiles.length && !onlyShowAssets ? (
           <>
             <Column noMargin>
