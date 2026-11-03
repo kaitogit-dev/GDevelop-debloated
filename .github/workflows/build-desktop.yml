@@ -18,7 +18,7 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=6144
       GENERATE_SOURCEMAP: 'false'
-      REACT_APP_GOOGLE_DRIVE_CLIENT_ID: ${{ vars.GOOGLE_DRIVE_CLIENT_ID }}
+      REACT_APP_GOOGLE_DRIVE_CLIENT_ID: 405721594704-l91o4c4p9ls28i2bmjrap1vqug3lhg2e.apps.googleusercontent.com
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
