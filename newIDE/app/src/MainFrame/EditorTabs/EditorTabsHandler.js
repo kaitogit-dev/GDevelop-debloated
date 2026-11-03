@@ -13,7 +13,6 @@ import {
   type RenderEditorContainerPropsWithRef,
   type EditorContainerExtraProps,
 } from '../EditorContainers/BaseEditor';
-import { type AskAiEditorInterface } from '../../AiGeneration/AskAiEditorContainer';
 import { type HTMLDataset } from '../../Utils/HTMLDataset';
 import { CustomObjectEditorContainer } from '../EditorContainers/CustomObjectEditorContainer';
 import { GameplayTestEditorContainer } from '../EditorContainers/GameplayTestEditorContainer';
@@ -28,8 +27,7 @@ type EditorRef =
   | GameplayTestEditorContainer
   | ResourcesEditorContainer
   | SceneEditorContainer
-  | HomePageEditorInterface
-  | AskAiEditorInterface;
+  | HomePageEditorInterface;
 
 type TabOptions = {| data?: HTMLDataset |};
 
@@ -857,7 +855,7 @@ const hasEditorTabOpenedWithKey = (
 export const getOpenedAskAiEditor = (
   state: EditorTabsState
 ): null | {|
-  askAiEditor: ?AskAiEditorInterface,
+  askAiEditor: ?{| requestClose?: () => Promise<boolean> |},
   editorTab: EditorTab,
   paneIdentifier: string,
   tabIndex: number,
@@ -865,10 +863,8 @@ export const getOpenedAskAiEditor = (
   const editorTabOpened = getEditorTabOpenedWithKey(state, 'ask-ai');
   if (!editorTabOpened) return null;
 
-  // $FlowFixMe[incompatible-type]
   return {
-    // $FlowFixMe[incompatible-type] - the key ensures that the editor is an AskAiEditorInterface.
-    askAiEditor: editorTabOpened.editorTab.editorRef,
+    askAiEditor: (editorTabOpened.editorTab.editorRef: any),
     editorTab: editorTabOpened.editorTab,
     paneIdentifier: editorTabOpened.paneIdentifier,
     tabIndex: editorTabOpened.tabIndex,
