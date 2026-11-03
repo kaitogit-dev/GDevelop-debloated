@@ -6,7 +6,7 @@ import { Column, Line, Spacer } from '../../UI/Grid';
 import { type ExampleShortHeader } from '../../Utils/GDevelopServices/Example';
 import { ExampleStoreContext } from './ExampleStoreContext';
 import { sendExampleDetailsOpened } from '../../Utils/Analytics/EventSender';
-import { t } from '@lingui/macro';
+import { t, Trans } from '@lingui/macro';
 import { type PrivateGameTemplateListingData } from '../../Utils/GDevelopServices/Shop';
 import GridList from '@material-ui/core/GridList';
 import { getExampleAndTemplateTiles } from '../../MainFrame/EditorContainers/HomePage/CreateSection/utils';
