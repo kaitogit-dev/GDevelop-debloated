@@ -20,7 +20,6 @@ import { type LearnCategory } from './LearnSection/Utils';
 import PlaySection from './PlaySection';
 import CreateSection from './CreateSection';
 import StoreSection from './StoreSection';
-import { TutorialContext } from '../../../Tutorial/TutorialContext';
 import { ExampleStoreContext } from '../../../AssetStore/ExampleStore/ExampleStoreContext';
 import { HomePageHeader } from './HomePageHeader';
 import { HomePageMenu, type HomeTab } from './HomePageMenu';
@@ -53,7 +52,6 @@ import {
   type HotReloadSteps,
 } from '../../../EmbeddedGame/EmbeddedGameFrame';
 import { type CreateProjectResult } from '../../../Utils/UseCreateProject';
-import { CreditsPackageStoreContext } from '../../../AssetStore/CreditsPackages/CreditsPackageStoreContext';
 import { type OpenAskAiOptions } from '../../../AiGeneration/Utils';
 
 const noop = () => {};
@@ -284,15 +282,10 @@ export const HomePage: React.ComponentType<Props> = React.memo<Props>(
         startTimeoutToUnloadIframe,
         loadIframeOrRemoveTimeout,
       } = gamesPlatformFrameTools;
-      const { fetchTutorials } = React.useContext(TutorialContext);
       const { fetchExamplesAndFilters } = React.useContext(ExampleStoreContext);
       const {
-        fetchGameTemplates,
         shop: { setInitialGameTemplateUserFriendlySlug },
       } = React.useContext(PrivateGameTemplateStoreContext);
-      const { fetchCreditsPackages } = React.useContext(
-        CreditsPackageStoreContext
-      );
       const [openedGameId, setOpenedGameId] = React.useState<?string>(null);
       const {
         games,
@@ -346,7 +339,6 @@ export const HomePage: React.ComponentType<Props> = React.memo<Props>(
         AssetStoreContext
       );
       const {
-        fetchBundles,
         shop: {
           setInitialBundleUserFriendlySlug: setInitialBundleUserFriendlySlugForShop,
           setInitialBundleCategory: setInitialBundleCategoryForShop,
@@ -458,22 +450,11 @@ export const HomePage: React.ComponentType<Props> = React.memo<Props>(
         ]
       );
 
-      // Load everything when the user opens the home page, to avoid future loading times.
       React.useEffect(
         () => {
           fetchExamplesAndFilters();
-          fetchGameTemplates();
-          fetchTutorials();
-          fetchBundles();
-          fetchCreditsPackages();
         },
-        [
-          fetchExamplesAndFilters,
-          fetchTutorials,
-          fetchGameTemplates,
-          fetchBundles,
-          fetchCreditsPackages,
-        ]
+        [fetchExamplesAndFilters]
       );
 
       // Fetch user cloud projects when home page becomes active
