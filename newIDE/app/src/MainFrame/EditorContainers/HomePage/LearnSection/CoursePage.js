@@ -19,7 +19,6 @@ import { textEllipsisStyle } from '../../../../UI/TextEllipsis';
 import { Column, LargeSpacer, Line, Spacer } from '../../../../UI/Grid';
 import Lock from '../../../../UI/CustomSvgIcons/Lock';
 import { ColumnStackLayout, LineStackLayout } from '../../../../UI/Layout';
-import RaisedButton from '../../../../UI/RaisedButton';
 import GDevelopThemeContext from '../../../../UI/Theme/GDevelopThemeContext';
 import { useResponsiveWindowSize } from '../../../../UI/Responsive/ResponsiveWindowMeasurer';
 import type { CourseChapterCompletion, CourseCompletion } from '../UseCourses';

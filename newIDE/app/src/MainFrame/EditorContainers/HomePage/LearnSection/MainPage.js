@@ -21,7 +21,6 @@ import ArrowRight from '../../../../UI/CustomSvgIcons/ArrowRight';
 import Upload from '../../../../UI/CustomSvgIcons/Upload';
 import AuthenticatedUserContext from '../../../../Profile/AuthenticatedUserContext';
 import { PrivateTutorialViewDialog } from '../../../../AssetStore/PrivateTutorials/PrivateTutorialViewDialog';
-import RaisedButton from '../../../../UI/RaisedButton';
 import CourseCard from './CourseCard';
 import GDevelopThemeContext from '../../../../UI/Theme/GDevelopThemeContext';
 import Link from '../../../../UI/Link';
