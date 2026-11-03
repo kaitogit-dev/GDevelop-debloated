@@ -47,7 +47,6 @@ import { type GamesList } from '../../../GameDashboard/UseGamesList';
 import { type GamesPlatformFrameTools } from './PlaySection/UseGamesPlatformFrame';
 import { type CourseChapter } from '../../../Utils/GDevelopServices/Asset';
 import useCourses from './UseCourses';
-import PreferencesContext from '../../Preferences/PreferencesContext';
 import { BundleStoreContext } from '../../../AssetStore/Bundles/BundleStoreContext';
 import {
   setEditorHotReloadNeeded,
