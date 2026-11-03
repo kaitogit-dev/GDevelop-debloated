@@ -4,6 +4,7 @@ import { t } from '@lingui/macro';
 import Cloud from '../../UI/CustomSvgIcons/Cloud';
 import { type StorageProvider, type FileMetadata, type SaveAsLocation } from '..';
 import GoogleDriveDialog from './GoogleDriveDialog';
+import GoogleDriveCreationLocationChooser from './GoogleDriveCreationLocationChooser';
 import {
   getGoogleDriveProject,
   getGoogleDriveProjectMetadata,
@@ -126,6 +127,9 @@ export default ({
   name: t`Google Drive`,
   renderIcon: props => <Cloud fontSize={props.size} />,
   getProjectLocation: ({ projectName }) => ({ name: projectName }),
+  renderNewProjectSaveAsLocationChooser: props => (
+    <GoogleDriveCreationLocationChooser {...props} />
+  ),
   createOperations: ({ setDialog, closeDialog }) => ({
     onOpenWithPicker: () =>
       new Promise(resolve => {
