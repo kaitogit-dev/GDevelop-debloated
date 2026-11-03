@@ -8,24 +8,12 @@ import { type StorageProvider } from '.';
 import { List } from '../UI/List';
 import StorageProviderListItem from './StorageProviderListItem';
 import AlertMessage from '../UI/AlertMessage';
-import Computer from '../UI/CustomSvgIcons/Computer';
-import { isNativeMobileApp } from '../Utils/Platform';
-import optionalRequire from '../Utils/OptionalRequire';
-const electron = optionalRequire('electron');
 
 type Props = {|
   storageProviders: Array<StorageProvider>,
   onChooseProvider: StorageProvider => void,
   onClose: () => void,
 |};
-
-const fakeLocalFileStorageProvider: StorageProvider = {
-  internalName: 'LocalFile',
-  name: t`Open from computer with GDevelop desktop app`,
-  disabled: true,
-  renderIcon: props => <Computer fontSize={props.size} />,
-  createOperations: () => ({}),
-};
 
 const OpenFromStorageProviderDialog = ({
   onClose,
@@ -71,12 +59,6 @@ const OpenFromStorageProviderDialog = ({
                   />
                 </React.Fragment>
               ))}
-            {!electron && !isNativeMobileApp() && (
-              <StorageProviderListItem
-                onChooseProvider={onChooseProvider}
-                storageProvider={fakeLocalFileStorageProvider}
-              />
-            )}
           </List>
         </Dialog>
       )}
