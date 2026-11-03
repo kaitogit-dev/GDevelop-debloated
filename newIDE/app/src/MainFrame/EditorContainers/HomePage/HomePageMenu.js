@@ -7,20 +7,11 @@ import IconButton from '../../../UI/IconButton';
 import VerticalTabButton from '../../../UI/VerticalTabButton';
 import DoubleChevronArrowLeft from '../../../UI/CustomSvgIcons/DoubleChevronArrowLeft';
 import HammerIcon from '../../../UI/CustomSvgIcons/Hammer';
-import SchoolIcon from '../../../UI/CustomSvgIcons/School';
 import ControllerIcon from '../../../UI/CustomSvgIcons/Controller';
-import BookLeafIcon from '../../../UI/CustomSvgIcons/BookLeaf';
-import StoreIcon from '../../../UI/CustomSvgIcons/Store';
 import Preferences from '../../../UI/CustomSvgIcons/Preferences';
 import GDevelopGLogo from '../../../UI/CustomSvgIcons/GDevelopGLogo';
 import GDevelopThemeContext from '../../../UI/Theme/GDevelopThemeContext';
 import HomePageMenuBar from './HomePageMenuBar';
-import {
-  shouldHideClassroomTab,
-  type Limits,
-} from '../../../Utils/GDevelopServices/Usage';
-import AuthenticatedUserContext from '../../../Profile/AuthenticatedUserContext';
-import { isNativeMobileApp } from '../../../Utils/Platform';
 
 export const styles = {
   // Ensure it's always interactive, even when another iframe disable pointer events.
@@ -65,22 +56,6 @@ const homePageMenuTabs: { [tab: HomeTab]: HomePageMenuTab } = {
       <HammerIcon fontSize={fontSize} color={color} />
     ),
   },
-  shop: {
-    label: <Trans>Shop</Trans>,
-    tab: 'shop',
-    id: 'home-shop-tab',
-    getIcon: ({ color, fontSize }) => (
-      <StoreIcon fontSize={fontSize} color={color} />
-    ),
-  },
-  learn: {
-    label: <Trans>Learn</Trans>,
-    tab: 'learn',
-    id: 'home-learn-tab',
-    getIcon: ({ color, fontSize }) => (
-      <SchoolIcon fontSize={fontSize} color={color} />
-    ),
-  },
   play: {
     label: <Trans>Play</Trans>,
     tab: 'play',
@@ -89,45 +64,13 @@ const homePageMenuTabs: { [tab: HomeTab]: HomePageMenuTab } = {
       <ControllerIcon fontSize={fontSize} color={color} />
     ),
   },
-  'team-view': {
-    label: <Trans>Teach</Trans>,
-    tab: 'team-view',
-    id: 'team-view-tab',
-    getIcon: ({ color, fontSize }) => (
-      <BookLeafIcon fontSize={fontSize} color={color} />
-    ),
-  },
+
 };
 
-export const getTabsToDisplay = ({
-  limits,
-}: {|
-  limits: ?Limits,
-|}): HomePageMenuTab[] => {
-  const displayPlayTab =
-    !limits ||
-    !(
-      limits.capabilities.classrooms &&
-      limits.capabilities.classrooms.hidePlayTab
-    );
-  const displayShopTab =
-    !limits ||
-    !(
-      limits.capabilities.classrooms &&
-      limits.capabilities.classrooms.hidePremiumProducts
-    );
-  const displayTeachTab =
-    !shouldHideClassroomTab(limits) && !isNativeMobileApp();
-  // $FlowFixMe[incompatible-type]
-  const tabs: HomeTab[] = [
-    'learn',
-    'create',
-    displayPlayTab ? 'play' : null,
-    displayShopTab ? 'shop' : null,
-    displayTeachTab ? 'team-view' : null,
-  ].filter(Boolean);
-  return tabs.map(tab => homePageMenuTabs[tab]);
-};
+export const getTabsToDisplay = (): HomePageMenuTab[] => [
+  homePageMenuTabs.create,
+  homePageMenuTabs.play,
+];
 
 type Props = {|
   setActiveTab: HomeTab => void,
@@ -143,13 +86,12 @@ export const HomePageMenu = ({
   onOpenAbout,
 }: Props): React.MixedElement => {
   const gdevelopTheme = React.useContext(GDevelopThemeContext);
-  const { limits } = React.useContext(AuthenticatedUserContext);
   const [
     isHomePageMenuDrawerOpen,
     setIsHomePageMenuDrawerOpen,
   ] = React.useState(false);
 
-  const tabsToDisplay = getTabsToDisplay({ limits });
+  const tabsToDisplay = getTabsToDisplay();
 
   const buttons: {
     label: React.Node,
