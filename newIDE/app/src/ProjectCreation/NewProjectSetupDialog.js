@@ -61,16 +61,11 @@ import EmptyMessage from '../UI/EmptyMessage';
 import { BundleStoreContext } from '../AssetStore/Bundles/BundleStoreContext';
 import { type CreateProjectResult } from '../Utils/UseCreateProject';
 import { isNativeMobileApp } from '../Utils/Platform';
-import { AskAiStandAloneForm } from '../AiGeneration/AskAiStandAloneForm';
 import { type OpenAskAiOptions } from '../AiGeneration/Utils';
-import { AiRequestContext } from '../AiGeneration/AiRequestContext';
 
 const electron = optionalRequire('electron');
 const remote = optionalRequire('@electron/remote');
 const app = remote ? remote.app : null;
-
-const ASK_AI_STANDALONE_FORM_DISMISSABLE_IDENTIFIER =
-  'new-project-setup-dialog';
 
 export const getItemsColumns = (
   windowSize: WindowSizeType,
@@ -221,16 +216,6 @@ const NewProjectSetupDialog = ({
   const { values, setNewProjectsDefaultStorageProviderName } = React.useContext(
     PreferencesContext
   );
-  const { limits } = authenticatedUser;
-  const isAskAiHiddenByClassroom =
-    !!limits &&
-    !!limits.capabilities.classrooms &&
-    limits.capabilities.classrooms.hideAskAi;
-  const isAskAiStandAloneFormHidden =
-    isAskAiHiddenByClassroom ||
-    !!values.hiddenAskAiStandAloneForms[
-      ASK_AI_STANDALONE_FORM_DISMISSABLE_IDENTIFIER
-    ];
   const { currentlyRunningInAppTutorial } = React.useContext(
     InAppTutorialContext
   );
@@ -331,9 +316,7 @@ const NewProjectSetupDialog = ({
     defaultCustomHeight;
   const selectedOrientation = resolutionOptions[resolutionOption].orientation;
 
-  const { aiRequestStorage } = React.useContext(AiRequestContext);
-  const { isSendingAiRequest } = aiRequestStorage;
-  const isLoading = isProjectOpening || isSendingAiRequest('');
+  const isLoading = isProjectOpening;
 
   const linkedExampleShortHeaders: {
     exampleShortHeader: ExampleShortHeader,
@@ -686,25 +669,6 @@ const NewProjectSetupDialog = ({
             )}
             {isOnHomePage && (
               <ColumnStackLayout noMargin>
-                <AskAiStandAloneForm
-                  i18n={i18n}
-                  project={project}
-                  resourceManagementProps={resourceManagementProps}
-                  fileMetadata={fileMetadata}
-                  storageProvider={storageProvider}
-                  onCreateProjectFromExample={onCreateFromExample}
-                  onCreateEmptyProject={onCreateEmptyProject}
-                  onOpenLayout={onOpenLayout}
-                  onWillInstallExtension={onWillInstallExtension}
-                  onExtensionInstalled={onExtensionInstalled}
-                  onCloseAskAi={onCloseAskAi}
-                  onOpenAskAi={onOpenAskAi}
-                  onCloseDialog={onClose}
-                  closeProject={closeProject}
-                  dismissableIdentifier={
-                    ASK_AI_STANDALONE_FORM_DISMISSABLE_IDENTIFIER
-                  }
-                />
                 <EmptyAndStartingPointProjects
                   onSelectExampleShortHeader={exampleShortHeader => {
                     onSelectExampleShortHeader(exampleShortHeader);
@@ -716,13 +680,7 @@ const NewProjectSetupDialog = ({
                   onSeeAll={() => {
                     setStartersSelected(true);
                   }}
-                  title={
-                    isAskAiStandAloneFormHidden ? (
-                      <Trans>Start from a template</Trans>
-                    ) : (
-                      <Trans>Continue with Human Intelligence</Trans>
-                    )
-                  }
+                  title={<Trans>Start from a template</Trans>}
                 />
                 {isOnline ? (
                   <>

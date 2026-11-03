@@ -1,4 +1,5 @@
 // @flow
+import { IS_AI_ASSISTANT_DISABLED } from '../Utils/DebloatConfig';
 import * as React from 'react';
 import optionalRequire from '../Utils/OptionalRequire';
 import { useCommandWithOptions } from '../CommandPalette/CommandHooks';
@@ -108,9 +109,10 @@ const ElectronMainMenu = ({
   const { limits } = React.useContext(AuthenticatedUserContext);
 
   const hideAskAi =
-    !!limits &&
-    !!limits.capabilities.classrooms &&
-    limits.capabilities.classrooms.hideAskAi;
+    IS_AI_ASSISTANT_DISABLED ||
+    (!!limits &&
+      !!limits.capabilities.classrooms &&
+      limits.capabilities.classrooms.hideAskAi);
 
   useAppEventListener({
     event: 'browser-window-focus',

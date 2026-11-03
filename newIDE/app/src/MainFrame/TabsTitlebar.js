@@ -11,16 +11,8 @@ import { type EditorTab } from './EditorTabs/EditorTabsHandler';
 import { getTabId } from './EditorTabs/DraggableEditorTabs';
 import { useScreenType } from '../UI/Responsive/ScreenTypeMeasurer';
 import TabsTitlebarTooltip from './TabsTitlebarTooltip';
-import RobotIcon from '../ProjectCreation/RobotIcon';
-import PreferencesContext from './Preferences/PreferencesContext';
-import TextButton from '../UI/TextButton';
-import { useInterval } from '../Utils/UseInterval';
-import classes from './TabsTitlebar.module.css';
-import { useIsMounted } from '../Utils/UseIsMounted';
-import AuthenticatedUserContext from '../Profile/AuthenticatedUserContext';
 import Window from '../Utils/Window';
 import { isMacLike } from '../Utils/Platform';
-import { AiRequestContext } from '../AiGeneration/AiRequestContext';
 import ConnectedAgentsIndicator from '../LiveMcpServer/ConnectedAgentsIndicator';
 
 const WINDOW_DRAGGABLE_PART_CLASS_NAME = 'title-bar-draggable-part';
@@ -42,15 +34,8 @@ const styles = {
     height: 34,
   },
   connectedAgentsContainer: {
-    // Vertically centered with the Ask AI button.
     marginBottom: 8,
     marginLeft: 4,
-  },
-  askAiContainer: {
-    zIndex: 0, // Create a stacking context to avoid the AI icon z-indexed element to display above other panes or UI elements.
-    marginBottom: 4,
-    marginRight: 1,
-    marginLeft: 2,
   },
 };
 
@@ -65,49 +50,7 @@ type TabsTitlebarProps = {|
   isRightMostPane: boolean,
   displayMenuIcon: boolean,
 
-  displayAskAi: boolean,
-  onAskAiClicked: () => void,
 |};
-
-const useIsAskAiIconAnimated = (shouldDisplayAskAi: boolean) => {
-  const isMounted = useIsMounted();
-
-  const [isAskAiIconAnimated, setIsAskAiIconAnimated] = React.useState(true);
-  const animate = React.useCallback(
-    (animationDuration: number) => {
-      if (isMounted.current) {
-        setIsAskAiIconAnimated(true);
-        setTimeout(() => {
-          if (!isMounted.current) return;
-
-          setIsAskAiIconAnimated(false);
-        }, animationDuration);
-      }
-    },
-    [isMounted]
-  );
-
-  React.useEffect(
-    () => {
-      // Animate the icon for a long time at the beginning.
-      animate(9000);
-    },
-    [animate]
-  );
-
-  useInterval(
-    () => {
-      setIsAskAiIconAnimated(true);
-      setTimeout(() => {
-        setIsAskAiIconAnimated(false);
-      }, 8000);
-    },
-    // Animate the icon every 20 minutes.
-    shouldDisplayAskAi ? 20 * 60 * 1000 : null
-  );
-
-  return isAskAiIconAnimated;
-};
 
 /**
  * The titlebar containing a menu, the tabs and giving space for window controls.
@@ -119,16 +62,8 @@ export default function TabsTitlebar({
   isLeftMostPane,
   isRightMostPane,
   displayMenuIcon,
-  displayAskAi,
-  onAskAiClicked,
 }: TabsTitlebarProps): React.MixedElement {
   const isTouchscreen = useScreenType() === 'touch';
-  const preferences = React.useContext(PreferencesContext);
-  const { limits } = React.useContext(AuthenticatedUserContext);
-  const { getWorkingAiRequest } = React.useContext(AiRequestContext);
-  // True when an AI request is still working — even if its tab/panel is closed,
-  // since the request lives in the app-level AiRequestContext.
-  const isAiWorking = !!getWorkingAiRequest();
   const [tooltipData, setTooltipData] = React.useState<?{|
     element: HTMLElement,
     editorTab: EditorTab,
@@ -194,50 +129,6 @@ export default function TabsTitlebar({
     []
   );
 
-  const hideAskAi =
-    !!limits &&
-    !!limits.capabilities.classrooms &&
-    limits.capabilities.classrooms.hideAskAi;
-
-  const shouldDisplayAskAi =
-    preferences.values.showAiAskButtonInTitleBar && displayAskAi && !hideAskAi;
-  const isAskAiIconAnimated = useIsAskAiIconAnimated(shouldDisplayAskAi);
-
-  const [isGlowing, setIsGlowing] = React.useState(false);
-  const glowTimeoutRef = React.useRef<?TimeoutID>(null);
-
-  const triggerGlow = React.useCallback(() => {
-    if (glowTimeoutRef.current) clearTimeout(glowTimeoutRef.current);
-    setIsGlowing(true);
-    glowTimeoutRef.current = setTimeout(() => {
-      setIsGlowing(false);
-      glowTimeoutRef.current = null;
-    }, 1000);
-  }, []);
-
-  React.useEffect(
-    () => () => {
-      if (glowTimeoutRef.current) clearTimeout(glowTimeoutRef.current);
-    },
-    []
-  );
-
-  // Desktop: glow when the Ask AI panel is closed (button re-appears).
-  const prevShouldDisplayAskAiRef = React.useRef(shouldDisplayAskAi);
-  React.useEffect(
-    () => {
-      if (shouldDisplayAskAi && !prevShouldDisplayAskAiRef.current) {
-        triggerGlow();
-      }
-      prevShouldDisplayAskAiRef.current = shouldDisplayAskAi;
-    },
-    [shouldDisplayAskAi, triggerGlow]
-  );
-
-  // While an AI request is working (and the button is shown), flash the button
-  // every 5 seconds to keep signalling that it is still working.
-  useInterval(triggerGlow, shouldDisplayAskAi && isAiWorking ? 5000 : null);
-
   const handleDoubleClick = React.useCallback(() => {
     // On macOS, double-clicking the title bar should maximize/restore the window
     if (isMacLike()) {
@@ -283,25 +174,6 @@ export default function TabsTitlebar({
           <ConnectedAgentsIndicator />
         </div>
       )}
-      {shouldDisplayAskAi ? (
-        <div
-          style={styles.askAiContainer}
-          className={WINDOW_NON_DRAGGABLE_PART_CLASS_NAME}
-        >
-          <div className={isGlowing ? classes.askAiGlow : undefined}>
-            <TextButton
-              icon={
-                <RobotIcon
-                  size={16}
-                  rotating={isAskAiIconAnimated || isAiWorking}
-                />
-              }
-              label={'Ask AI'}
-              onClick={onAskAiClicked}
-            />
-          </div>
-        </div>
-      ) : null}
       {isRightMostPane && <TitleBarRightSafeMargins />}
       {tooltipData && tooltipData.element.isConnected && (
         <TabsTitlebarTooltip

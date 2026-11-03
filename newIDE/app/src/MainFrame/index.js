@@ -1,4 +1,5 @@
 // @flow
+import { IS_AI_ASSISTANT_DISABLED } from '../Utils/DebloatConfig';
 
 import * as React from 'react';
 import { type State } from './MainFrameState';
@@ -99,8 +100,6 @@ import {
   getRenamedEventsBasedObjectTabProjectItemName,
   type RenamableTab,
 } from './EditorTabs/EditorTabsRenaming';
-import { renderAskAiEditorContainer } from '../AiGeneration/AskAiEditorContainer';
-import { requestAskAiPrefill } from '../AiGeneration/AskAiPrefill';
 import {
   isInGameEditorExtensionErrorFromStore,
   getAskAiToFixInGameEditorExtensionErrorsText,
@@ -176,7 +175,6 @@ import SaveToStorageProviderDialog from '../ProjectsStorage/SaveToStorageProvide
 import { useOpenConfirmDialog } from '../ProjectsStorage/OpenConfirmDialog';
 import verifyProjectContent from '../ProjectsStorage/ProjectContentChecker';
 import UnsavedChangesContext from './UnsavedChangesContext';
-import { AiRequestContext } from '../AiGeneration/AiRequestContext';
 import {
   type BuildMainMenuProps,
   type MainMenuCallbacks,
@@ -335,7 +333,7 @@ const editorKindToRenderer: {
   'start page': renderHomePageContainer,
   resources: renderResourcesEditorContainer,
   'global-search': renderGlobalEventsSearchEditorContainer,
-  'ask-ai': renderAskAiEditorContainer,
+  'ask-ai': () => null,
 };
 
 const defaultSnackbarAutoHideDuration = 3000;
@@ -669,10 +667,6 @@ const MainFrame = (props: Props): React.MixedElement => {
     EventsFunctionsExtensionsContext
   );
   const unsavedChanges = React.useContext(UnsavedChangesContext);
-  const {
-    getWorkingAiRequest,
-    suspendAiRequest: suspendWorkingAiRequest,
-  } = React.useContext(AiRequestContext);
 
   // Allow gameplay tests to be run from anywhere in the editor. Registered
   // ONCE (the only dependency is a stable ref), reading the latest values
@@ -1184,86 +1178,7 @@ const MainFrame = (props: Props): React.MixedElement => {
 
   useDiscordRichPresence(currentProject);
 
-  const openAskAi = React.useCallback(
-    (options: ?OpenAskAiOptions) => {
-      const {
-        aiRequestId,
-        paneIdentifier,
-        continueProcessingFunctionCallsOnMount,
-        prefilledUserRequest,
-        prefillInCurrentChat,
-      } = options || {};
-      const newPaneIdentifier =
-        paneIdentifier || (currentProject ? 'right' : 'center');
-
-      if (prefilledUserRequest) {
-        // Delivered to the Ask AI editor as soon as it's mounted (or
-        // immediately if it already is).
-        requestAskAiPrefill({
-          userRequestText: prefilledUserRequest,
-          inCurrentChat: !!prefillInCurrentChat,
-        });
-      }
-
-      setState(state => {
-        let openedEditor = getOpenedAskAiEditor(state.editorTabs);
-        let newEditorTabs = state.editorTabs;
-        if (openedEditor) {
-          if (openedEditor.paneIdentifier !== newPaneIdentifier) {
-            // The editor is opened, but not at the right position, close it.
-            // It will re-open in the right pane. Repositioning unmounts then
-            // remounts the editor, but that never suspends the AI request:
-            // suspending is only triggered by explicit close/stop actions.
-            newEditorTabs = closeEditorTab(
-              newEditorTabs,
-              openedEditor.editorTab
-            );
-            newEditorTabs = openEditorTab(
-              newEditorTabs,
-              // $FlowFixMe[incompatible-type]
-              getEditorOpeningOptions({
-                kind: 'ask-ai',
-                name: '',
-                paneIdentifier: newPaneIdentifier,
-                continueProcessingFunctionCallsOnMount,
-              })
-            );
-          }
-        }
-
-        newEditorTabs = openEditorTab(
-          newEditorTabs,
-          // $FlowFixMe[incompatible-type]
-          getEditorOpeningOptions({
-            kind: 'ask-ai',
-            name: '',
-            paneIdentifier: newPaneIdentifier,
-            continueProcessingFunctionCallsOnMount,
-          })
-        );
-
-        return {
-          ...state,
-          editorTabs: newEditorTabs,
-        };
-      }).then(state => {
-        // Wait for the state to be updated before starting/opening the chat,
-        // as the editor needs to be mounted.
-        const params = aiRequestId === undefined ? undefined : { aiRequestId };
-        const openedEditor = getOpenedAskAiEditor(state.editorTabs);
-        if (!openedEditor) {
-          console.error(
-            'No Ask AI editor found after opening it. This should not happen.'
-          );
-          return;
-        }
-        if (openedEditor.askAiEditor) {
-          openedEditor.askAiEditor.startOrOpenChat(params);
-        }
-      });
-    },
-    [setState, getEditorOpeningOptions, currentProject]
-  );
+  const openAskAi: (?OpenAskAiOptions) => void = React.useCallback(() => {}, []);
 
   const closeAskAi = React.useCallback(
     () => {
@@ -5457,23 +5372,6 @@ const MainFrame = (props: Props): React.MixedElement => {
         if (!answer) return false;
       }
 
-      // If the AI is working on this project, ask the user to stop it (or cancel
-      // the close) first. Done here — on the explicit user close — rather than in
-      // closeProject(), which is also called programmatically while *opening* a
-      // project (and would wrongly prompt during e.g. AI-driven project opening).
-      const workingAiRequest = getWorkingAiRequest();
-      if (workingAiRequest) {
-        const shouldStopAndClose = await showConfirmation({
-          title: t`Close the project?`,
-          message: t`The AI is currently working on your project. Closing the project will stop it. Do you want to continue?`,
-          confirmButtonLabel: t`Stop working`,
-          dismissButtonLabel: t`Cancel`,
-          level: 'warning',
-        });
-        if (!shouldStopAndClose) return false;
-        await suspendWorkingAiRequest(workingAiRequest.id);
-      }
-
       await closeProject();
       return true;
     },
@@ -5482,8 +5380,6 @@ const MainFrame = (props: Props): React.MixedElement => {
       hasUnsavedChanges,
       i18n,
       closeProject,
-      getWorkingAiRequest,
-      suspendWorkingAiRequest,
       showConfirmation,
     ]
   );
@@ -6210,9 +6106,10 @@ const MainFrame = (props: Props): React.MixedElement => {
 
   const previewLoading = previewLoadingRef.current;
   const hideAskAi =
-    !!authenticatedUser.limits &&
+    IS_AI_ASSISTANT_DISABLED ||
+    (!!authenticatedUser.limits &&
     !!authenticatedUser.limits.capabilities.classrooms &&
-    authenticatedUser.limits.capabilities.classrooms.hideAskAi;
+    authenticatedUser.limits.capabilities.classrooms.hideAskAi);
   const showLoaderAfterDelay =
     previewLoading === 'hot-reload-for-in-game-edition';
   const showLoaderImmediately =

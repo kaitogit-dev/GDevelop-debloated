@@ -15,7 +15,6 @@ import {
   type EditorTabsState,
   type EditorTab,
   type EditorKind,
-  getEditorTabOpenedWithKey,
   changeCurrentTab,
   closeEditorTab,
   closeOtherEditorTabs,
@@ -483,7 +482,6 @@ const EditorTabsPane: React.ComponentType<{
 
   const toolbarRef = React.useRef<?ToolbarInterface>(null);
   const unsavedChanges = React.useContext(UnsavedChangesContext);
-  const askAiPaneIdentifier = getEditorTabOpenedWithKey(editorTabs, 'ask-ai');
   const containerRef = React.useRef<?HTMLDivElement>(null);
 
   const [
@@ -637,21 +635,6 @@ const EditorTabsPane: React.ComponentType<{
   });
   useOnResize(useForceUpdate()); // Ensure the pane is re-rendered when the window is resized.
 
-  const onOpenAskAiFromTitlebar = React.useCallback(
-    () => {
-      if (
-        askAiPaneIdentifier &&
-        askAiPaneIdentifier.paneIdentifier === 'right'
-      ) {
-        onSetPaneDrawerState('right', 'open');
-        return;
-      }
-
-      onOpenAskAi();
-    },
-    [askAiPaneIdentifier, onOpenAskAi, onSetPaneDrawerState]
-  );
-
   return (
     <div style={styles.container} ref={containerRef}>
       {isDrawer ? (
@@ -731,17 +714,6 @@ const EditorTabsPane: React.ComponentType<{
               onHoverTab={onEditorTabHovered}
             />
           )}
-          displayAskAi={
-            !askAiPaneIdentifier
-              ? // If Ask AI is closed, display the button on the right most part of the window.
-                isRightMostPane
-              : // If it's open in a drawer, only show the button when the drawer is closed,
-                // so the button re-appears (with a glow) when the user dismisses the panel.
-                areSidePanesDrawers &&
-                askAiPaneIdentifier.paneIdentifier !== 'center' &&
-                !rightPaneDrawerOpen
-          }
-          onAskAiClicked={onOpenAskAiFromTitlebar}
         />
       )}
       <Toolbar

@@ -1,4 +1,5 @@
 // @flow
+import { IS_AI_ASSISTANT_DISABLED } from '../../../../Utils/DebloatConfig';
 import * as React from 'react';
 import { I18n } from '@lingui/react';
 import { Line, Column, Spacer } from '../../../../UI/Grid';
@@ -393,7 +394,7 @@ const MainPage = ({
                   cellHeight="auto"
                   spacing={ITEMS_SPACING * 2}
                 >
-                  {!isStudentAccount && (
+                  {!IS_AI_ASSISTANT_DISABLED && !isStudentAccount && (
                     <GridListTile
                       cols={1}
                       style={{ background: 'transparent' }}
