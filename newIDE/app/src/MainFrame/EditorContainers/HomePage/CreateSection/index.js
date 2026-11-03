@@ -13,14 +13,13 @@ import {
   type Game,
 } from '../../../../Utils/GDevelopServices/Game';
 import PlaceholderError from '../../../../UI/PlaceholderError';
-import { Column, LargeSpacer, Line } from '../../../../UI/Grid';
+import { Column, Line } from '../../../../UI/Grid';
 import { ColumnStackLayout } from '../../../../UI/Layout';
 import { type GameDetailsTab } from '../../../../GameDashboard';
 import GameDashboard from '../../../../GameDashboard';
 import useAlertDialog from '../../../../UI/Alert/useAlertDialog';
 import RouterContext from '../../../RouterContext';
 import { extractGDevelopApiErrorStatusAndCode } from '../../../../Utils/GDevelopServices/Errors';
-import UserEarningsWidget from '../../../../GameDashboard/Monetization/UserEarningsWidget';
 import {
   type FileMetadataAndStorageProviderName,
   type FileMetadata,
@@ -28,8 +27,6 @@ import {
 } from '../../../../ProjectsStorage';
 import { type ResourceManagementProps } from '../../../../ResourcesList/ResourceSource';
 import Text from '../../../../UI/Text';
-import Grid from '@material-ui/core/Grid';
-import WalletWidget from '../../../../GameDashboard/Wallet/WalletWidget';
 import {
   type NewProjectSetup,
   type ExampleProjectSetup,
@@ -146,7 +143,6 @@ const CreateSection = ({
   onOpenAskAi,
   closeProject,
   canOpen,
-  onOpenProfile,
   askToCloseProject,
   onCreateProjectFromExample,
   onSelectPrivateGameTemplateListingData,
@@ -170,7 +166,6 @@ const CreateSection = ({
     profile,
     getAuthorizationHeader,
     subscription,
-    limits,
   } = authenticatedUser;
   const {
     showDeleteConfirmation,
@@ -184,9 +179,7 @@ const CreateSection = ({
   const { routeArguments, removeRouteArguments } = React.useContext(
     RouterContext
   );
-  const { windowSize, isMobile, isLandscape } = useResponsiveWindowSize();
-  const isMobileOrMediumWidth =
-    windowSize === 'small' || windowSize === 'medium';
+  const { isMobile } = useResponsiveWindowSize();
   const hasTooManyCloudProjects = checkIfHasTooManyCloudProjects(
     authenticatedUser
   );
@@ -194,10 +187,6 @@ const CreateSection = ({
   const savedGames = (games || []).filter(game => game.savedStatus !== 'draft');
   const hasAProjectOpenedNowOrRecentlyOrGameSaved =
     !!project || savedGames.length || !!allRecentProjectFiles.length;
-  const hidePerformanceDashboard =
-    !!limits &&
-    !!limits.capabilities.classrooms &&
-    limits.capabilities.classrooms.hideSocials;
 
   React.useEffect(
     () => {
@@ -554,37 +543,6 @@ const CreateSection = ({
         >
           <SectionRow expand>
             <ColumnStackLayout noMargin>
-              {hidePerformanceDashboard ? null : hasAProjectOpenedNowOrRecentlyOrGameSaved ? (
-                <ColumnStackLayout noMargin>
-                  <Grid container spacing={2}>
-                    <UserEarningsWidget
-                      size={
-                        isMobile && isLandscape
-                          ? 'half'
-                          : isMobileOrMediumWidth
-                          ? 'full'
-                          : 'twoThirds'
-                      }
-                    />
-                    <WalletWidget
-                      onOpenProfile={onOpenProfile}
-                      showOneItem
-                      size={
-                        isMobile && isLandscape
-                          ? 'half'
-                          : isMobileOrMediumWidth
-                          ? 'full'
-                          : 'oneThird'
-                      }
-                    />
-                  </Grid>
-                </ColumnStackLayout>
-              ) : (
-                <Grid container spacing={2}>
-                  <WalletWidget onOpenProfile={onOpenProfile} size="full" />
-                </Grid>
-              )}
-              <LargeSpacer />
               {gamesFetchingError ? (
                 <PlaceholderError onRetry={onRefreshGames}>
                   <Trans>
