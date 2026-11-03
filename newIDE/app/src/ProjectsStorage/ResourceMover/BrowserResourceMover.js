@@ -6,6 +6,7 @@ import {
   type MoveAllProjectResourcesFunction,
 } from './index';
 import CloudStorageProvider from '../CloudStorageProvider';
+import GoogleDriveStorageProvider from '../GoogleDriveStorageProvider';
 import UrlStorageProvider from '../UrlStorageProvider';
 import DownloadFileStorageProvider from '../DownloadFileStorageProvider';
 import { moveUrlResourcesToCloudProject } from '../CloudStorageProvider/CloudResourceMover';
@@ -19,6 +20,12 @@ const moveNothing = async () => {
 const movers: {
   [string]: MoveAllProjectResourcesFunction,
 } = {
+  [`${UrlStorageProvider.internalName}=>${GoogleDriveStorageProvider.internalName}`]: moveNothing,
+  [`${CloudStorageProvider.internalName}=>${GoogleDriveStorageProvider.internalName}`]: moveNothing,
+  [`${GoogleDriveStorageProvider.internalName}=>${GoogleDriveStorageProvider.internalName}`]: moveNothing,
+  [`${GoogleDriveStorageProvider.internalName}=>${DownloadFileStorageProvider.internalName}`]: moveNothing,
+  [`${GoogleDriveStorageProvider.internalName}=>${CloudStorageProvider.internalName}`]: moveUrlResourcesToCloudProject,
+
   // Moving to GDevelop "Cloud" storage:
 
   // From a Cloud project to another, resources need to be copied
