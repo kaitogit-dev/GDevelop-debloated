@@ -1,4 +1,5 @@
 // @flow
+import { IS_AI_ASSISTANT_DISABLED } from '../Utils/DebloatConfig';
 import * as React from 'react';
 import { Trans, Plural } from '@lingui/macro';
 import Popover from '@material-ui/core/Popover';
@@ -112,7 +113,7 @@ const InGameEditorExtensionErrorsIndicator = ({
                     onDismiss();
                   }}
                 />
-                {hasErrorsFixableByAi && (
+                {!IS_AI_ASSISTANT_DISABLED && hasErrorsFixableByAi && (
                   <RaisedButton
                     color="ai"
                     label={<Trans>Ask the AI to fix</Trans>}

@@ -1,4 +1,5 @@
 // @flow
+import { IS_AI_ASSISTANT_DISABLED } from '../../../../Utils/DebloatConfig';
 
 import * as React from 'react';
 import { type I18n as I18nType } from '@lingui/core';
@@ -455,7 +456,7 @@ const CoursePage = ({
                       <Spacer />
                       {tableOfContent}
                     </Paper>
-                    {!isStudentAccount && (
+                    {!IS_AI_ASSISTANT_DISABLED && !isStudentAccount && (
                       <Paper
                         background="light"
                         style={styles.askAQuestionContainer}

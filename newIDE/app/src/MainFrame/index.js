@@ -1,4 +1,5 @@
 // @flow
+import { IS_AI_ASSISTANT_DISABLED } from '../Utils/DebloatConfig';
 
 import * as React from 'react';
 import { type State } from './MainFrameState';
@@ -99,7 +100,6 @@ import {
   getRenamedEventsBasedObjectTabProjectItemName,
   type RenamableTab,
 } from './EditorTabs/EditorTabsRenaming';
-import { renderAskAiEditorContainer } from '../AiGeneration/AskAiEditorContainer';
 import { requestAskAiPrefill } from '../AiGeneration/AskAiPrefill';
 import {
   isInGameEditorExtensionErrorFromStore,
@@ -335,7 +335,8 @@ const editorKindToRenderer: {
   'start page': renderHomePageContainer,
   resources: renderResourcesEditorContainer,
   'global-search': renderGlobalEventsSearchEditorContainer,
-  'ask-ai': renderAskAiEditorContainer,
+  // Keep the legacy editor kind safe to render if an old tab is restored.
+  'ask-ai': () => null,
 };
 
 const defaultSnackbarAutoHideDuration = 3000;
@@ -1186,6 +1187,7 @@ const MainFrame = (props: Props): React.MixedElement => {
 
   const openAskAi = React.useCallback(
     (options: ?OpenAskAiOptions) => {
+      if (IS_AI_ASSISTANT_DISABLED) return;
       const {
         aiRequestId,
         paneIdentifier,
@@ -6210,9 +6212,10 @@ const MainFrame = (props: Props): React.MixedElement => {
 
   const previewLoading = previewLoadingRef.current;
   const hideAskAi =
-    !!authenticatedUser.limits &&
+    IS_AI_ASSISTANT_DISABLED ||
+    (!!authenticatedUser.limits &&
     !!authenticatedUser.limits.capabilities.classrooms &&
-    authenticatedUser.limits.capabilities.classrooms.hideAskAi;
+    authenticatedUser.limits.capabilities.classrooms.hideAskAi);
   const showLoaderAfterDelay =
     previewLoading === 'hot-reload-for-in-game-edition';
   const showLoaderImmediately =

@@ -1,4 +1,5 @@
 // @flow
+import { IS_AI_ASSISTANT_DISABLED } from '../Utils/DebloatConfig';
 import * as React from 'react';
 
 import MenuIcon from '../UI/CustomSvgIcons/Menu';
@@ -200,7 +201,10 @@ export default function TabsTitlebar({
     limits.capabilities.classrooms.hideAskAi;
 
   const shouldDisplayAskAi =
-    preferences.values.showAiAskButtonInTitleBar && displayAskAi && !hideAskAi;
+    !IS_AI_ASSISTANT_DISABLED &&
+    preferences.values.showAiAskButtonInTitleBar &&
+    displayAskAi &&
+    !hideAskAi;
   const isAskAiIconAnimated = useIsAskAiIconAnimated(shouldDisplayAskAi);
 
   const [isGlowing, setIsGlowing] = React.useState(false);

@@ -67,7 +67,6 @@ import SettingsIcon from '../../UI/CustomSvgIcons/Settings';
 import FolderIcon from '../../UI/CustomSvgIcons/Folder';
 import HammerIcon from '../../UI/CustomSvgIcons/Hammer';
 import SparkleIcon from '../../UI/CustomSvgIcons/Sparkle';
-import RobotFaceIcon from '../../UI/CustomSvgIcons/RobotFace';
 import ExtensionIcon from '../../UI/CustomSvgIcons/Extension';
 import DebugIcon from '../../UI/CustomSvgIcons/Debug';
 import ProjectManagerIcon from '../../UI/CustomSvgIcons/ProjectManager';
@@ -173,9 +172,9 @@ const sections: Array<PreferencesSection> = [
   },
   {
     name: 'ask-ai',
-    label: t`Ask AI`,
+    label: t`Integrations`,
     getIcon: ({ color, fontSize }) => (
-      <RobotFaceIcon fontSize={fontSize} color={color} />
+      <ExtensionIcon fontSize={fontSize} color={color} />
     ),
   },
   {
@@ -418,7 +417,6 @@ const PreferencesDialog = ({
     showAllAlertMessages,
     showAllTutorialHints,
     showAllAnnouncements,
-    showAllAskAiStandAloneForms,
     setAutoDisplayChangelog,
     setEventsSheetShowObjectThumbnails,
     setAutosaveOnPreview,
@@ -449,8 +447,6 @@ const PreferencesDialog = ({
     setFetchPlayerTokenForPreviewAutomatically,
     setPreviewCrashReportUploadLevel,
     setTakeScreenshotOnPreview,
-    setShowAiAskButtonInTitleBar,
-    setAutomaticallyUseCreditsForAiRequests,
     setShowCreateSectionByDefault,
     setDisableNpmScriptConfirmation,
     setUseBackgroundSerializerForSaving,
@@ -1164,40 +1160,8 @@ const PreferencesDialog = ({
           ],
         };
       case 'ask-ai':
-        return {
-          settings: [
-            {
-              id: 'show-ask-ai-button-in-title-bar',
-              label: i18n._(t`Show "Ask AI" button in the title bar`),
-              renderControl: () =>
-                renderToggle(
-                  values.showAiAskButtonInTitleBar,
-                  setShowAiAskButtonInTitleBar
-                ),
-            },
-            {
-              id: 'automatically-use-credits-for-ai-requests',
-              label: i18n._(
-                t`Automatically use GDevelop credits for AI requests when run out of AI credits`
-              ),
-              renderControl: () =>
-                renderToggle(
-                  values.automaticallyUseCreditsForAiRequests,
-                  setAutomaticallyUseCreditsForAiRequests
-                ),
-            },
-            {
-              id: 'hidden-ask-ai-forms',
-              label: i18n._(t`Hidden Ask AI text inputs`),
-              renderControl: () =>
-                renderResetButton(
-                  showAllAskAiStandAloneForms,
-                  !Object.keys(values.hiddenAskAiStandAloneForms).length
-                ),
-            },
-            ...liveMcpServerSettings,
-          ],
-        };
+        // AI-specific controls are gone; keep connected-agent settings available.
+        return { settings: [...liveMcpServerSettings] };
       case 'other':
         return {
           settings: [
