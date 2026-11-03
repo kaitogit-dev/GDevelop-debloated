@@ -348,6 +348,12 @@ export default class AuthenticatedUserProvider extends React.Component<
         'Error while fetching the user profile - but ignoring it.',
         error
       );
+      this.setState(({ authenticatedUser }) => ({
+        authenticatedUser: {
+          ...authenticatedUser,
+          loginState: 'done',
+        },
+      }));
     }
   };
 
