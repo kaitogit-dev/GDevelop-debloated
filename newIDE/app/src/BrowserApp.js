@@ -26,6 +26,7 @@ import ProjectStorageProviders from './ProjectsStorage/ProjectStorageProviders';
 import UrlStorageProvider from './ProjectsStorage/UrlStorageProvider';
 import DownloadFileStorageProvider from './ProjectsStorage/DownloadFileStorageProvider';
 import GoogleDriveStorageProvider from './ProjectsStorage/GoogleDriveStorageProvider';
+import BrowserImportStorageProvider from './ProjectsStorage/BrowserImportStorageProvider';
 import BrowserResourceMover from './ProjectsStorage/ResourceMover/BrowserResourceMover';
 import BrowserResourceFetcher from './ProjectsStorage/ResourceFetcher/BrowserResourceFetcher';
 import BrowserEventsFunctionsExtensionOpener from './EventsFunctionsExtensionsLoader/Storage/BrowserEventsFunctionsExtensionOpener';
@@ -68,6 +69,7 @@ export const create = (authentication: Authentication): React.Node => {
           appArguments={appArguments}
           storageProviders={[
             UrlStorageProvider,
+            BrowserImportStorageProvider,
             GoogleDriveStorageProvider,
             DownloadFileStorageProvider,
           ]}

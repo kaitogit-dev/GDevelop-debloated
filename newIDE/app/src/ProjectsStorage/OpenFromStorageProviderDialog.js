@@ -27,7 +27,7 @@ const OpenFromStorageProviderDialog = ({
     <I18n>
       {({ i18n }) => (
         <Dialog
-          title={<Trans>Choose where to load the project from</Trans>}
+          title={<Trans>Import or open a project</Trans>}
           actions={[
             <FlatButton
               label={<Trans>Cancel</Trans>}

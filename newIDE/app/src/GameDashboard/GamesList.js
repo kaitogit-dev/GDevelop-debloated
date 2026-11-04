@@ -45,14 +45,9 @@ import {
 } from '../MainFrame/EditorContainers/HomePage/CreateSection/utils';
 import AuthenticatedUserContext from '../Profile/AuthenticatedUserContext';
 import Refresh from '../UI/CustomSvgIcons/Refresh';
-import optionalRequire from '../Utils/OptionalRequire';
 import TextButton from '../UI/TextButton';
 import Skeleton from '@material-ui/lab/Skeleton';
 import PreferencesContext from '../MainFrame/Preferences/PreferencesContext';
-const electron = optionalRequire('electron');
-
-const isDesktop = !!electron;
-
 const pageSize = 10;
 
 const styles = {
@@ -546,12 +541,7 @@ const GamesList = ({
     [orderBy, filter]
   );
 
-  const shouldShowOpenProject =
-    canOpen &&
-    // Only show on large screens.
-    !isMobile &&
-    // Only show on desktop as otherwise, cloud projects are the only ones that can be opened.
-    isDesktop;
+  const shouldShowOpenProject = canOpen;
 
   return (
     <I18n>
@@ -596,9 +586,9 @@ const GamesList = ({
                 <TextButton
                   label={
                     isMobile ? (
-                      <Trans>Open</Trans>
+                      <Trans>Import</Trans>
                     ) : (
-                      <Trans>Open a project</Trans>
+                      <Trans>Import project</Trans>
                     )
                   }
                   onClick={onChooseProject}

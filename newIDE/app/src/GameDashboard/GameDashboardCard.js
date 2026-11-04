@@ -51,8 +51,6 @@ import History from '../UI/CustomSvgIcons/History';
 import WarningRound from '../UI/CustomSvgIcons/WarningRound';
 import PreferencesContext from '../MainFrame/Preferences/PreferencesContext';
 import { textEllipsisStyle } from '../UI/TextEllipsis';
-import FileWithLines from '../UI/CustomSvgIcons/FileWithLines';
-import TextButton from '../UI/TextButton';
 import { getRelativeOrAbsoluteDisplayDate } from '../Utils/DateDisplay';
 
 // It's important to use remote and not electron for folder actions,
@@ -206,7 +204,6 @@ const GameDashboardCard = ({
   dashboardItem,
   storageProviders,
   isCurrentProjectOpened,
-  onOpenGameManager,
   onOpenProject,
   onUnregisterGame,
   disabled,
@@ -218,7 +215,6 @@ const GameDashboardCard = ({
   currentFileMetadata,
   onRefreshGames,
   onDeleteCloudProject,
-  onRegisterProject,
   onRestoreProject,
 }: Props): React.Node => {
   useOnResize(useForceUpdate());
@@ -238,11 +234,10 @@ const GameDashboardCard = ({
     : null;
 
   const authenticatedUser = React.useContext(AuthenticatedUserContext);
-  const { profile, onOpenLoginDialog, limits } = authenticatedUser;
+  const { limits } = authenticatedUser;
   const { removeRecentProjectFile } = React.useContext(PreferencesContext);
   const {
     showAlert,
-    showConfirmation,
     showDeleteConfirmation,
   } = useAlertDialog();
 
@@ -342,31 +337,7 @@ const GameDashboardCard = ({
       <Text size="block-title" noMargin style={styles.title}>
         {gameName || <Trans>Unknown game</Trans>}
       </Text>
-      {projectsList.length >= 2 && game && (
-        <>
-          <Spacer />
-          <Tooltip title={<Trans>{projectsList.length} projects</Trans>}>
-            {/* Button must be wrapped in a container so that the parent tooltip
-                  can display even if the button is disabled. */}
-            <div style={styles.tooltipButtonContainer}>
-              <TextButton
-                onClick={() =>
-                  onOpenGameManager({ game, widgetToScrollTo: 'projects' })
-                }
-                icon={<FileWithLines style={styles.fileIcon} />}
-                label={
-                  <Text noMargin color="secondary">
-                    {projectsList.length}
-                  </Text>
-                }
-                disabled={disabled}
-                // $FlowFixMe[incompatible-type]
-                style={styles.projectFilesButton}
-              />
-            </div>
-          </Tooltip>
-        </>
-      )}
+
     </Line>
   );
 
@@ -477,7 +448,7 @@ const GameDashboardCard = ({
     const actions: Array<MenuItemTemplate> = [];
     if (projectsList.length > 1) {
       actions.push(
-        ...projectsList.slice(0, 3).map(fileMetadataAndStorageProviderName => {
+        ...projectsList.map(fileMetadataAndStorageProviderName => {
           // $FlowFixMe[incompatible-type]
           return {
             label: getProjectItemLabel(
@@ -490,20 +461,6 @@ const GameDashboardCard = ({
         })
       );
 
-      if (game) {
-        actions.push(
-          ...[
-            // $FlowFixMe[incompatible-type]
-            { type: 'separator' },
-            // $FlowFixMe[incompatible-type]
-            {
-              label: i18n._(t`See all in the game dashboard`),
-              click: () =>
-                onOpenGameManager({ game, widgetToScrollTo: 'projects' }),
-            },
-          ]
-        );
-      }
     }
 
     // $FlowFixMe[incompatible-type]
@@ -620,19 +577,6 @@ const GameDashboardCard = ({
             }
           }
 
-          if (projectsList.length > 1) {
-            // If there are multiple projects, suggest opening the game dashboard.
-            actions.push({
-              label: i18n._(t`See all projects`),
-              click: game
-                ? () =>
-                    // $FlowFixMe[incompatible-type]
-                    onOpenGameManager({ game, widgetToScrollTo: 'projects' })
-                : // $FlowFixMe[incompatible-type]
-                  undefined,
-            });
-          }
-
           // Delete actions.
           // Don't allow removing project if opened, as it would not result in any change in the list.
           // (because an opened project is always displayed)
@@ -713,54 +657,11 @@ const GameDashboardCard = ({
     );
   };
 
-  const onManageGame = React.useCallback(
-    async () => {
-      if (game) {
-        onOpenGameManager({ game });
-        return;
-      } else {
-        if (!profile) {
-          onOpenLoginDialog();
-          return;
-        }
-        const answer = await showConfirmation({
-          title: t`Manage game online`,
-          message: t`This game is not registered online. Do you want to register it to access the online features?`,
-          confirmButtonLabel: t`Continue`,
-        });
-        if (!answer) return;
-
-        const registeredGame = await onRegisterProject(projectsList[0]);
-        if (!registeredGame) return;
-
-        await onRefreshGames();
-        onOpenGameManager({ game: registeredGame });
-      }
-    },
-    [
-      game,
-      onOpenGameManager,
-      showConfirmation,
-      onRegisterProject,
-      projectsList,
-      onRefreshGames,
-      onOpenLoginDialog,
-      profile,
-    ]
-  );
-
   const renderButtons = ({ fullWidth }: {| fullWidth: boolean |}) => {
     if (deletedCloudProject) {
       return (
         <div style={styles.buttonsContainer}>
           <LineStackLayout noMargin>
-            <FlatButton
-              primary
-              fullWidth={fullWidth}
-              label={<Trans>Manage</Trans>}
-              onClick={() => {}}
-              disabled
-            />
             <RaisedButton
               primary
               fullWidth={fullWidth}
@@ -800,13 +701,6 @@ const GameDashboardCard = ({
     return (
       <div style={styles.buttonsContainer}>
         <LineStackLayout noMargin>
-          <FlatButton
-            primary
-            fullWidth={fullWidth}
-            label={<Trans>Manage</Trans>}
-            onClick={onManageGame}
-            disabled={disabled}
-          />
           {projectsList.length < 2 ? (
             <RaisedButton
               primary

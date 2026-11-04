@@ -7,6 +7,7 @@ import {
 } from './index';
 import CloudStorageProvider from '../CloudStorageProvider';
 import GoogleDriveStorageProvider from '../GoogleDriveStorageProvider';
+import BrowserImportStorageProvider from '../BrowserImportStorageProvider';
 import UrlStorageProvider from '../UrlStorageProvider';
 import DownloadFileStorageProvider from '../DownloadFileStorageProvider';
 import { moveUrlResourcesToCloudProject } from '../CloudStorageProvider/CloudResourceMover';
@@ -20,6 +21,8 @@ const moveNothing = async () => {
 const movers: {
   [string]: MoveAllProjectResourcesFunction,
 } = {
+  [`${BrowserImportStorageProvider.internalName}=>${GoogleDriveStorageProvider.internalName}`]: moveNothing,
+  [`${BrowserImportStorageProvider.internalName}=>${DownloadFileStorageProvider.internalName}`]: moveNothing,
   [`${UrlStorageProvider.internalName}=>${GoogleDriveStorageProvider.internalName}`]: moveNothing,
   [`${CloudStorageProvider.internalName}=>${GoogleDriveStorageProvider.internalName}`]: moveNothing,
   [`${GoogleDriveStorageProvider.internalName}=>${GoogleDriveStorageProvider.internalName}`]: moveNothing,
