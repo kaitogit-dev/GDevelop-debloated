@@ -14,7 +14,6 @@ import {
   type FileMetadataAndStorageProviderName,
   type StorageProvider,
 } from '../ProjectsStorage';
-import FlatButton from '../UI/FlatButton';
 import Text from '../UI/Text';
 import { GameThumbnail } from './GameThumbnail';
 import { type MenuItemTemplate } from '../UI/Menu/Menu.flow';

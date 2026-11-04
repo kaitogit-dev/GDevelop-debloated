@@ -99,7 +99,7 @@ const chooseLocalFile = () =>
     input.click();
   });
 
-export default {
+const BrowserImportStorageProvider = {
   internalName: 'BrowserImport',
   name: t`Import from computer`,
   renderIcon: props => <FileWithLines fontSize={props.size} />,
@@ -116,3 +116,5 @@ export default {
       t`Could not open this project. Import a GDevelop JSON file or a ZIP containing game.json and its assets.`,
   }),
 };
+
+export default BrowserImportStorageProvider;
