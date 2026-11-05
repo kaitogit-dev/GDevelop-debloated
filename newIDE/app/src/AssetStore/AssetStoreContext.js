@@ -13,10 +13,7 @@ import {
   listAllAuthors,
   listAllLicenses,
 } from '../Utils/GDevelopServices/Asset';
-import {
-  listListedPrivateAssetPacks,
-  type PrivateAssetPackListingData,
-} from '../Utils/GDevelopServices/Shop';
+import { type PrivateAssetPackListingData } from '../Utils/GDevelopServices/Shop';
 import { useSearchItem, type SearchFilter } from '../UI/Search/UseSearchItem';
 import {
   TagAssetStoreSearchFilter,
@@ -191,7 +188,6 @@ export const AssetStoreStateProvider = ({
   const {
     receivedAssetShortHeaders,
     receivedAssetPacks,
-    limits,
   } = React.useContext(AuthenticatedUserContext);
   const [filters, setFilters] = React.useState<?Filters>(null);
   const [
@@ -289,10 +285,7 @@ export const AssetStoreStateProvider = ({
   const assetPackSearchFilters = React.useMemo<
     Array<SearchFilter<PublicAssetPack | PrivateAssetPackListingData>>
   >(() => [assetPackTypeFilter], [assetPackTypeFilter]);
-  const hidePremiumProducts =
-    !!limits &&
-    !!limits.capabilities.classrooms &&
-    limits.capabilities.classrooms.hidePremiumProducts;
+  const hidePremiumProducts = true;
 
   // Only the last fetch is applied: switching the environment while a fetch is
   // running must not let the previous environment's assets come last.
@@ -312,7 +305,6 @@ export const AssetStoreStateProvider = ({
           } = await listAllPublicAssets({ environment });
           const fetchedAuthors = await listAllAuthors({ environment });
           const fetchedLicenses = await listAllLicenses({ environment });
-          const fetchedPrivateAssetPackListingDatas = await listListedPrivateAssetPacks();
           if (fetchIndex !== lastFetchIndex.current) return;
 
           console.info(
@@ -327,7 +319,7 @@ export const AssetStoreStateProvider = ({
           setFilters(fetchedPublicFilters);
           setAuthors(fetchedAuthors);
           setLicenses(fetchedLicenses);
-          setPrivateAssetPackListingDatas(fetchedPrivateAssetPackListingDatas);
+          setPrivateAssetPackListingDatas([]);
         } catch (error) {
           if (fetchIndex !== lastFetchIndex.current) return;
           console.error(
