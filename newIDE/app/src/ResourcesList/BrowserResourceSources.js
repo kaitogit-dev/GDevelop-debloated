@@ -18,7 +18,7 @@ import SemiControlledTextField from '../UI/SemiControlledTextField';
 import { useDebounce } from '../Utils/UseDebounce';
 import axios from 'axios';
 import AlertMessage from '../UI/AlertMessage';
-import { FileToCloudProjectResourceUploader } from './FileToCloudProjectResourceUploader';
+import BrowserFileResourceImporter from './BrowserFileResourceImporter';
 import {
   extractDecodedFilenameWithExtensionFromPublicAssetResourceUrl,
   isPublicAssetResourceUrl,
@@ -189,7 +189,7 @@ const browserResourceSources: Array<ResourceSource> = [
       // $FlowFixMe[incompatible-type]
       kind,
       renderComponent: (props: ResourceSourceComponentProps) => (
-        <FileToCloudProjectResourceUploader
+        <BrowserFileResourceImporter
           createNewResource={createNewResource}
           onChooseResources={(resources: Array<gdResource>) =>
             props.onChooseResources({
@@ -198,9 +198,7 @@ const browserResourceSources: Array<ResourceSource> = [
             })
           }
           options={props.options}
-          fileMetadata={props.fileMetadata}
-          getStorageProvider={props.getStorageProvider}
-          key={`url-chooser-${kind}`}
+          key={`browser-file-${kind}`}
           automaticallyOpenInput={!!props.automaticallyOpenIfPossible}
         />
       ),

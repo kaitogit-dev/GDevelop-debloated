@@ -12,14 +12,13 @@ import {
 } from './ResourceExternalEditor';
 import { sendExternalEditorOpened } from '../Utils/Analytics/EventSender';
 import { t } from '@lingui/macro';
-import { isBlobURL, isURL } from './ResourceUtils';
+import { isURL } from './ResourceUtils';
 import { type ResourceKind } from './ResourceSource';
 import {
   convertBlobToDataURL,
   downloadUrlsToBlobs,
   type ItemResult,
 } from '../Utils/BlobDownloader';
-import { showWarningBox } from '../UI/Messages/MessageBox';
 import { displayBlackLoadingScreenOrThrow } from '../Utils/BrowserExternalWindowUtils';
 import { UserCancellationError } from '../LoginProvider/Utils';
 import { triggerOnResourceExternallyChanged } from '../MainFrame/ResourcesWatcher';
@@ -171,14 +170,10 @@ export const downloadAndPrepareExternalEditorBase64Resources = async ({
     const resource = resourcesManager.getResource(resourceName);
     const url = resource.getFile();
     if (isURL(url)) {
-      if (isBlobURL(url)) {
-        console.error('Unsupported blob URL for a resource - ignoring it.');
-      } else {
-        urlsToDownload.push({
-          url,
-          resourceName,
-        });
-      }
+      urlsToDownload.push({
+        url,
+        resourceName,
+      });
     } else {
       console.error('Unsupported local file for a resource - ignoring it.');
     }
@@ -309,6 +304,7 @@ const editWithBrowserExternalEditor = async ({
     metadata: options.extraOptions.singleFrame
       ? externalEditorOutput.externalEditorData
       : null,
+    keepBlobUrls: true,
   });
 
   const hasCreatedAnyResource = externalEditorOutput.resources.some(
@@ -355,8 +351,6 @@ const editWithBrowserExternalEditor = async ({
   };
 };
 
-const cloudProjectWarning = t`You need to save this project as a cloud project to install this asset. Please save your project and try again.`;
-
 /**
  * Open a window showing a black "loading..." screen. It's important this is done
  * NOT in an asynchronous way but JUST after a click. Otherwise, browsers like Safari
@@ -396,14 +390,6 @@ const editors: Array<ResourceExternalEditor> = [
     editDisplayName: t`Edit with Piskel`,
     kind: 'image',
     edit: async options => {
-      if (options.getStorageProvider().internalName !== 'Cloud') {
-        const { i18n } = options;
-        showWarningBox(i18n._(cloudProjectWarning), {
-          delayToNextTick: true,
-        });
-        return null;
-      }
-
       const externalEditorWindow = immediatelyOpenLoadingWindowForExternalEditor();
       // $FlowFixMe[incompatible-type]
       return await editWithBrowserExternalEditor({
@@ -422,14 +408,6 @@ const editors: Array<ResourceExternalEditor> = [
     editDisplayName: t`Edit with Jfxr`,
     kind: 'audio',
     edit: async options => {
-      if (options.getStorageProvider().internalName !== 'Cloud') {
-        const { i18n } = options;
-        showWarningBox(i18n._(cloudProjectWarning), {
-          delayToNextTick: true,
-        });
-        return null;
-      }
-
       const externalEditorWindow = immediatelyOpenLoadingWindowForExternalEditor();
       return await editWithBrowserExternalEditor({
         options,
@@ -447,14 +425,6 @@ const editors: Array<ResourceExternalEditor> = [
     editDisplayName: t`Edit with Yarn`,
     kind: 'json',
     edit: async options => {
-      if (options.getStorageProvider().internalName !== 'Cloud') {
-        const { i18n } = options;
-        showWarningBox(i18n._(cloudProjectWarning), {
-          delayToNextTick: true,
-        });
-        return null;
-      }
-
       const externalEditorWindow = immediatelyOpenLoadingWindowForExternalEditor();
       return await editWithBrowserExternalEditor({
         options,

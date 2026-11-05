@@ -208,10 +208,12 @@ export const freeBlobsAndUpdateMetadata = ({
   modifiedResources,
   metadataKey,
   metadata,
+  keepBlobUrls = false,
 }: {|
   modifiedResources: Array<ResourceWithTemporaryBlobUrl>,
   metadataKey: string,
   metadata: ?any,
+  keepBlobUrls?: boolean,
 |}) => {
   modifiedResources.forEach(({ resource, blobUrl }) => {
     // Free the blob urls that were created just to allow the resources
@@ -219,7 +221,7 @@ export const freeBlobsAndUpdateMetadata = ({
     // If we don't revoke these blob urls, they will stay in memory forever, despite
     // being used only temporarily as a temporary storage before they are uploaded somewhere
     // (Cloud) or written to the disk (LocalFile).
-    URL.revokeObjectURL(blobUrl);
+    if (!keepBlobUrls) URL.revokeObjectURL(blobUrl);
 
     // Update the modified resources with the metadata of the editor.
     if (metadata) {
