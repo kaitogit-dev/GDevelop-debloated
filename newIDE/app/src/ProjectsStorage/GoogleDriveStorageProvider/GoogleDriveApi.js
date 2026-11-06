@@ -246,7 +246,10 @@ export const restoreGoogleDriveSession = (): Promise<?string> => {
       applyToken(response, restoredAccount);
       return restoredAccount;
     } catch (error) {
-      silentAuthFailed = true;
+      if (generation === connectionGeneration) {
+        silentAuthFailed = true;
+        expireToken();
+      }
       return null;
     } finally {
       restorePromise = null;
