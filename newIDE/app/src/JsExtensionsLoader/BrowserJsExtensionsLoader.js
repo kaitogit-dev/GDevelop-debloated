@@ -48,6 +48,11 @@ const jsExtensions = [
     objectsRenderingServiceModules: {},
   },
   {
+    name: 'EasySave',
+    extensionModule: require('GDJS-for-web-app-only/Runtime/Extensions/EasySave/JsExtension.js'),
+    objectsRenderingServiceModules: {},
+  },
+  {
     name: 'DebuggerTools',
     // $FlowFixMe[cannot-resolve-module]
     extensionModule: require('GDJS-for-web-app-only/Runtime/Extensions/DebuggerTools/JsExtension.js'),
