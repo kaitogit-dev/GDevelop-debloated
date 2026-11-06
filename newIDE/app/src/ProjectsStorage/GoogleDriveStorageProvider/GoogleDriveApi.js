@@ -57,26 +57,37 @@ const requireAccessToken = (): string => {
 
 const driveFetch = async (
   url: string,
-  options?: RequestOptions
+  options?: RequestOptions,
+  operation: string = 'request'
 ): Promise<Response> => {
   const headers = {
     ...(options && options.headers ? options.headers : {}),
     Authorization: `Bearer ${requireAccessToken()}`,
   };
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(url, { ...options, headers });
+  } catch (error) {
+    throw new Error(
+      `Google Drive ${operation} failed: ${error.message || String(error)}. Check your network connection and browser permissions.`
+    );
+  }
   if (!response.ok) {
     const body = await response.text();
-    let message = body;
+    let message = response.statusText || 'Unknown error';
     try {
-      const errorResponse = JSON.parse(body);
-      message = errorResponse.error?.message || body;
+      const parsed = JSON.parse(body);
+      message = parsed.error?.message || message;
     } catch (error) {
-      message = body;
+      if (body) message = body;
     }
-    throw new Error(`Google Drive request failed (${response.status}): ${message.slice(0, 350)}`);
+    const signInAdvice =
+      response.status === 401
+        ? ' Reconnect your Google account, then try again.'
+        : '';
+    throw new Error(
+      `Google Drive ${operation} failed (HTTP ${response.status}): ${message.slice(0, 300)}.${signInAdvice}`
+    );
   }
   return response;
 };
@@ -175,6 +186,88 @@ export const getGoogleDriveProjectMetadata = async (
   return response.json();
 };
 
+const multipartUpload = async ({
+  url,
+  method,
+  metadata,
+  archive,
+}: {|
+  url: string,
+  method: 'POST' | 'PATCH',
+  metadata: Object,
+  archive: Blob,
+|}): Promise<DriveProjectFile> => {
+  const boundary = `gdevelop_${Date.now().toString(36)}_${Math.random()
+    .toString(36)
+    .slice(2)}`;
+  const contentType = `multipart/related; boundary=${boundary}`;
+  const requestBody = new Blob([
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+    JSON.stringify(metadata),
+    `\r\n--${boundary}\r\nContent-Type: application/zip\r\n\r\n`,
+    archive,
+    `\r\n--${boundary}--\r\n`,
+  ]);
+  const response = await driveFetch(
+    url,
+    {
+      method,
+      headers: { 'Content-Type': contentType },
+      body: requestBody,
+    },
+    'upload'
+  );
+  return response.json();
+};
+
+const resumableUpload = async ({
+  url,
+  method,
+  metadata,
+  archive,
+}: {|
+  url: string,
+  method: 'POST' | 'PATCH',
+  metadata: Object,
+  archive: Blob,
+|}): Promise<DriveProjectFile> => {
+  const response = await driveFetch(
+    url,
+    {
+      method,
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Type': 'application/zip',
+        'X-Upload-Content-Length': String(archive.size),
+      },
+      body: JSON.stringify(metadata),
+    },
+    'upload initialization'
+  );
+  const sessionUrl = response.headers.get('Location');
+  if (!sessionUrl) {
+    throw new Error('Google Drive did not provide the upload session address. Try saving again.');
+  }
+  const parsedUrl = new URL(sessionUrl);
+  if (
+    parsedUrl.protocol !== 'https:' ||
+    parsedUrl.hostname !== 'www.googleapis.com' ||
+    !parsedUrl.pathname.startsWith('/upload/drive/')
+  ) {
+    throw new Error('Google Drive returned an invalid upload session address.');
+  }
+  const uploadResponse = await driveFetch(
+    parsedUrl.href,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/zip' },
+      body: archive,
+    },
+    'file upload'
+  );
+  return uploadResponse.json();
+};
+
 export const saveGoogleDriveProject = async ({
   id,
   name,
@@ -184,8 +277,9 @@ export const saveGoogleDriveProject = async ({
   name: string,
   archive: Blob,
 |}): Promise<DriveProjectFile> => {
+  const method = id ? 'PATCH' : 'POST';
   const params = new URLSearchParams({
-    uploadType: 'resumable',
+    uploadType: archive.size < 8 * 1024 * 1024 ? 'multipart' : 'resumable',
     fields: 'id,name,modifiedTime',
   });
   const url = id
@@ -198,26 +292,12 @@ export const saveGoogleDriveProject = async ({
         mimeType: 'application/zip',
         appProperties: { gdevelopDebloated: 'project' },
       };
-  const initialResponse = await driveFetch(url, {
-    method: id ? 'PATCH' : 'POST',
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'X-Upload-Content-Type': 'application/zip',
-      'X-Upload-Content-Length': String(archive.size),
-    },
-    body: JSON.stringify(metadata),
-  });
-  const sessionUrl = initialResponse.headers.get('Location');
-  if (!sessionUrl) {
-    throw new Error('Google Drive did not return an upload session URL.');
+  const uploader = archive.size < 8 * 1024 * 1024
+    ? multipartUpload
+    : resumableUpload;
+  const file = await uploader({ url, method, metadata, archive });
+  if (!file || !file.id || !file.modifiedTime) {
+    throw new Error('Google Drive did not confirm the uploaded project. Check your Drive before retrying.');
   }
-  const uploadResponse = await driveFetch(sessionUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/zip',
-      'Content-Range': `bytes 0-${archive.size - 1}/${archive.size}`,
-    },
-    body: archive,
-  });
-  return uploadResponse.json();
+  return file;
 };

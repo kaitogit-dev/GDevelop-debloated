@@ -151,7 +151,9 @@ export default ({
     onSaveProjectAs,
     getOpenErrorMessage: () =>
       t`Unable to open this Google Drive project. Reconnect the account that owns it and try again.`,
-    getWriteErrorMessage: () =>
-      t`Unable to save this Google Drive project. Check your connection, permissions and storage space.`,
+    getWriteErrorMessage: error =>
+      error && error.message
+        ? error.message
+        : t`Unable to save this Google Drive project. Check your connection, permissions and storage space.`,
   }),
 }: StorageProvider);

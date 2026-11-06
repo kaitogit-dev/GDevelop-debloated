@@ -5305,10 +5305,16 @@ const MainFrame = (props: Props): React.MixedElement => {
         const extractedStatusAndCode = extractGDevelopApiErrorStatusAndCode(
           error
         );
-        const message =
-          extractedStatusAndCode && extractedStatusAndCode.status === 403
-            ? t`You don't have permissions to save this project. Please choose another location.`
-            : t`An error occurred when saving the project. Please try again later.`;
+        const writeErrorMessage =
+          getStorageProvider().internalName === 'GoogleDrive'
+            ? storageProviderOperations.getWriteErrorMessage
+            : null;
+        const message = writeErrorMessage
+          ? writeErrorMessage(error)
+          : extractedStatusAndCode && extractedStatusAndCode.status === 403
+          ? t`You don't have permissions to save this project. Please choose another location.`
+          : t`An error occurred when saving the project. Please try again later.`;
+        console.error('Unable to save project:', error);
         showAlert({
           title: t`Unable to save the project`,
           message,
