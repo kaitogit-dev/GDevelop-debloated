@@ -24,6 +24,7 @@ class ClickInterceptor {
   onInterceptPointerMove: () => void;
   _shouldCancelClick: boolean = false;
   _isIntercepting: boolean = false;
+  _isErasingWithRightClick: boolean = false;
   _touchingPointerIds: Set<number> = new Set();
   _cancelUntilNoMoreTouches: boolean = false;
 
@@ -70,8 +71,11 @@ class ClickInterceptor {
             return;
           }
         } else if (e.pointerType === 'mouse') {
-          if (e.button !== 0) return;
+          if (e.button !== 0 && e.button !== 2) return;
         }
+        if (this._isIntercepting) return;
+        this._isErasingWithRightClick =
+          e.pointerType === 'mouse' && e.button === 2;
         this._startClickInterception(
           e.originalEvent.globalX,
           e.originalEvent.globalY
@@ -88,7 +92,7 @@ class ClickInterceptor {
             this._cancelUntilNoMoreTouches = false;
           }
         } else if (e.pointerType === 'mouse') {
-          if (e.button !== 0) return;
+          if (e.button !== (this._isErasingWithRightClick ? 2 : 0)) return;
         }
         this._endClickInterception();
       }
@@ -137,13 +141,22 @@ class ClickInterceptor {
 
   _endClickInterception() {
     this._isIntercepting = false;
-    if (!this.pointerPathCoordinates) return;
-    if (this._shouldCancelClick) {
-      this._shouldCancelClick = false;
+    if (!this.pointerPathCoordinates) {
+      this._isErasingWithRightClick = false;
       return;
     }
-    this.onClick(this.pointerPathCoordinates);
-    this.pointerPathCoordinates = null;
+    if (this._shouldCancelClick) {
+      this._shouldCancelClick = false;
+      this.pointerPathCoordinates = null;
+      this._isErasingWithRightClick = false;
+      return;
+    }
+    try {
+      this.onClick(this.pointerPathCoordinates);
+    } finally {
+      this.pointerPathCoordinates = null;
+      this._isErasingWithRightClick = false;
+    }
   }
 
   _interceptPointerMove(deviceX: number, deviceY: number) {
@@ -216,6 +229,10 @@ class ClickInterceptor {
 
   isIntercepting(): boolean {
     return this._isIntercepting;
+  }
+
+  isErasingWithRightClick(): boolean {
+    return this._isErasingWithRightClick;
   }
 
   cancelClickInterception() {

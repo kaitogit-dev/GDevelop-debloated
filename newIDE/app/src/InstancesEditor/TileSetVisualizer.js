@@ -954,7 +954,7 @@ const TileSetVisualizer = ({
               <IconButton
                 id="eraseBrush"
                 size="small"
-                tooltip={t`Erase`}
+                tooltip={t`Erase (right-click on canvas)`}
                 selected={isToolSelected('erase')}
                 onClick={toggleErase}
               >

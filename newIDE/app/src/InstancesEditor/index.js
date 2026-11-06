@@ -369,6 +369,9 @@ export default class InstancesEditor extends Component<Props, State> {
       event.preventDefault();
     };
     this.pixiRenderer.view.setAttribute('tabIndex', -1);
+    this.pixiRenderer.view.addEventListener('contextmenu', event => {
+      if (this.props.tileMapTileSelection) event.preventDefault();
+    });
     // Listened on the window (in the capture phase, as tree views stop the propagation)
     // so that shortcuts also work when the canvas is only hovered, like the wheel zoom.
     window.addEventListener('keydown', this.keyboardShortcuts.onKeyDown, true);
@@ -876,6 +879,13 @@ export default class InstancesEditor extends Component<Props, State> {
   }
 
   getTileMapTileSelection = (): any => {
+    if (
+      this.props.tileMapTileSelection &&
+      this.clickInterceptor &&
+      this.clickInterceptor.isErasingWithRightClick()
+    ) {
+      return { kind: 'erase' };
+    }
     return this.props.tileMapTileSelection;
   };
 
@@ -939,11 +949,11 @@ export default class InstancesEditor extends Component<Props, State> {
 
   _onInterceptClick = (sceneCoordinates: Array<{| x: number, y: number |}>) => {
     const {
-      tileMapTileSelection,
       instancesSelection,
       globalObjectsContainer,
       objectsContainer,
     } = this.props;
+    const tileMapTileSelection = this.getTileMapTileSelection();
     if (!tileMapTileSelection) {
       return;
     }
@@ -1414,6 +1424,7 @@ export default class InstancesEditor extends Component<Props, State> {
     y: number,
     ignoreSelectedObjectNamesForContextMenu?: boolean,
   |}) => {
+    if (this.props.tileMapTileSelection) return;
     this.lastContextMenuX = offsetX;
     this.lastContextMenuY = offsetY;
     if (this.props.onContextMenu) {
