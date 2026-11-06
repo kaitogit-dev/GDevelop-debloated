@@ -9,6 +9,7 @@ import {
   connectGoogleDrive,
   getConnectedDriveAccount,
   getGoogleDriveClientId,
+  restoreGoogleDriveSession,
 } from './GoogleDriveApi';
 
 type Props = {|
@@ -29,6 +30,18 @@ const GoogleDriveCreationLocationChooser = ({
   );
   const [isConnecting, setIsConnecting] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string>('');
+
+  React.useEffect(() => {
+    let mounted = true;
+    restoreGoogleDriveSession().then(restoredAccount => {
+      if (!mounted) return;
+      setAccount(restoredAccount);
+      if (restoredAccount) setSaveAsLocation({ name: projectName });
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [projectName, setSaveAsLocation]);
 
   const onChooseAccount = async () => {
     setIsConnecting(true);

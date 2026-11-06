@@ -12,6 +12,7 @@ import {
   getGoogleDriveClientId,
   listGoogleDriveProjects,
   preloadGoogleIdentity,
+  restoreGoogleDriveSession,
   type DriveProjectFile,
 } from './GoogleDriveApi';
 
@@ -42,9 +43,23 @@ export default function GoogleDriveDialog({
   const [error, setError] = React.useState<string>('');
 
   React.useEffect(() => {
+    let active = true;
     preloadGoogleIdentity().catch(loadError => {
-      setError(loadError.message || String(loadError));
+      if (active) setError(loadError.message || String(loadError));
     });
+    if (!getConnectedDriveAccount()) {
+      setBusy(true);
+      restoreGoogleDriveSession()
+        .then(restoredAccount => {
+          if (active) setAccount(restoredAccount);
+        })
+        .finally(() => {
+          if (active) setBusy(false);
+        });
+    }
+    return () => {
+      active = false;
+    };
   }, []);
 
   React.useEffect(() => {

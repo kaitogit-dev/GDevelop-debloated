@@ -5,12 +5,21 @@ const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const CLIENT_ID_STORAGE_KEY = 'gdevelop-debloated-google-drive-client-id';
+const DRIVE_SESSION_STORAGE_KEY = 'gdevelop-debloated-google-drive-session';
 
 let identityScriptPromise = null;
 let accessToken = '';
 let accessTokenExpiresAt = 0;
 let connectedAccount = null;
+let sessionLoaded = false;
+let silentAuthFailed = false;
+let restorePromise: ?Promise<?string> = null;
+let connectionGeneration = 0;
 const accountListeners: Set<() => void> = new Set();
+
+const notifyAccountListeners = () => {
+  accountListeners.forEach(listener => listener());
+};
 
 export const subscribeToGoogleDriveAccount = (
   listener: () => void
@@ -31,9 +40,68 @@ export const setGoogleDriveClientId = (clientId: string): void => {
   window.localStorage.setItem(CLIENT_ID_STORAGE_KEY, clientId.trim());
 };
 
+type SavedDriveSession = {|
+  clientId: string,
+  account: string,
+  token: string,
+  expiresAt: number,
+|};
+
+const readSavedSession = (): ?SavedDriveSession => {
+  try {
+    const stored = window.localStorage.getItem(DRIVE_SESSION_STORAGE_KEY);
+    if (!stored) return null;
+    const session = JSON.parse(stored);
+    if (
+      !session ||
+      session.clientId !== getGoogleDriveClientId() ||
+      typeof session.account !== 'string' ||
+      typeof session.token !== 'string' ||
+      !Number.isFinite(session.expiresAt)
+    ) {
+      return null;
+    }
+    return session;
+  } catch (error) {
+    return null;
+  }
+};
+
+const writeSavedSession = (account: string): void => {
+  try {
+    window.localStorage.setItem(
+      DRIVE_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        clientId: getGoogleDriveClientId(),
+        account,
+        token: accessToken,
+        expiresAt: accessTokenExpiresAt,
+      })
+    );
+  } catch (error) {
+    return;
+  }
+};
+
+const hydrateSession = () => {
+  if (sessionLoaded) return;
+  sessionLoaded = true;
+  const saved = readSavedSession();
+  if (saved && saved.expiresAt > Date.now() + 5000) {
+    accessToken = saved.token;
+    accessTokenExpiresAt = saved.expiresAt;
+    connectedAccount = saved.account;
+  }
+};
+
+export const getRememberedDriveAccount = (): ?string =>
+  readSavedSession()?.account || null;
+
 export const getConnectedDriveAccount = (): ?string => {
-  if (Date.now() >= accessTokenExpiresAt) return null;
-  return connectedAccount;
+  hydrateSession();
+  return accessToken && Date.now() < accessTokenExpiresAt
+    ? connectedAccount
+    : null;
 };
 
 export const preloadGoogleIdentity = (): Promise<void> => {
@@ -48,9 +116,153 @@ export const preloadGoogleIdentity = (): Promise<void> => {
   return identityScriptPromise;
 };
 
-const requireAccessToken = (): string => {
-  if (!accessToken || Date.now() >= accessTokenExpiresAt) {
-    throw new Error('Google Drive session expired. Reconnect your Google account and try again.');
+const requestDriveAccessToken = async ({
+  clientId,
+  prompt,
+  loginHint,
+  timeoutMs,
+}: {|
+  clientId: string,
+  prompt: string,
+  loginHint?: string,
+  timeoutMs: number,
+|}): Promise<any> => {
+  await preloadGoogleIdentity();
+  const google = (window: any).google;
+  if (!google || !google.accounts || !google.accounts.oauth2) {
+    throw new Error('Google account sign-in could not be loaded.');
+  }
+
+  return new Promise((resolve, reject) => {
+    let completed = false;
+    const finish = (error, token) => {
+      if (completed) return;
+      completed = true;
+      clearTimeout(timeout);
+      if (error) reject(error);
+      else resolve(token);
+    };
+    const timeout = setTimeout(
+      () => finish(new Error('Google sign-in did not respond.')),
+      timeoutMs
+    );
+    try {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: DRIVE_SCOPE,
+        ...(loginHint ? { login_hint: loginHint } : {}),
+        callback: response => {
+          if (!response || response.error || !response.access_token) {
+            finish(
+              new Error(
+                response?.error_description ||
+                  response?.error ||
+                  'Google authorization failed.'
+              )
+            );
+            return;
+          }
+          finish(null, response);
+        },
+        error_callback: response => {
+          finish(
+            new Error(
+              response?.message ||
+                response?.type ||
+                'Google authorization popup was closed.'
+            )
+          );
+        },
+      });
+      client.requestAccessToken({ prompt });
+    } catch (error) {
+      finish(error);
+    }
+  });
+};
+
+const getAccountForToken = async (token: string): Promise<string> => {
+  const response = await fetch(
+    `${DRIVE_API}/about?fields=user(emailAddress,displayName)`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!response.ok) {
+    throw new Error(`Google Drive authorization failed (HTTP ${response.status}).`);
+  }
+  const account = await response.json();
+  return account.user?.emailAddress ||
+    account.user?.displayName ||
+    'Google Drive';
+};
+
+const applyToken = (
+  tokenResponse: any,
+  account: string
+): void => {
+  accessToken = tokenResponse.access_token;
+  accessTokenExpiresAt =
+    Date.now() + Number(tokenResponse.expires_in || 3600) * 1000 - 60000;
+  connectedAccount = account;
+  sessionLoaded = true;
+  silentAuthFailed = false;
+  writeSavedSession(account);
+  notifyAccountListeners();
+};
+
+const expireToken = (): void => {
+  accessToken = '';
+  accessTokenExpiresAt = 0;
+  connectedAccount = null;
+  const saved = readSavedSession();
+  if (saved) writeSavedSession(saved.account);
+  notifyAccountListeners();
+};
+
+export const restoreGoogleDriveSession = (): Promise<?string> => {
+  hydrateSession();
+  const account = getConnectedDriveAccount();
+  if (account) return Promise.resolve(account);
+  if (restorePromise) return restorePromise;
+
+  const saved = readSavedSession();
+  if (!saved || silentAuthFailed) return Promise.resolve(null);
+
+  const generation = connectionGeneration;
+  restorePromise = (async () => {
+    try {
+      const response = await requestDriveAccessToken({
+        clientId: saved.clientId,
+        prompt: 'none',
+        loginHint: saved.account,
+        timeoutMs: 12000,
+      });
+      const restoredAccount = await getAccountForToken(response.access_token);
+      if (generation !== connectionGeneration) return getConnectedDriveAccount();
+      if (
+        saved.account.toLowerCase() !== restoredAccount.toLowerCase()
+      ) {
+        throw new Error('Google returned a different account.');
+      }
+      applyToken(response, restoredAccount);
+      return restoredAccount;
+    } catch (error) {
+      silentAuthFailed = true;
+      return null;
+    } finally {
+      restorePromise = null;
+    }
+  })();
+  return restorePromise;
+};
+
+const requireAccessToken = async (): Promise<string> => {
+  hydrateSession();
+  if (getConnectedDriveAccount()) return accessToken;
+  const account = await restoreGoogleDriveSession();
+  if (!account) {
+    throw new Error(
+      'Google Drive session expired. Reconnect your Google account and try again.'
+    );
   }
   return accessToken;
 };
@@ -60,13 +272,23 @@ const driveFetch = async (
   options?: RequestOptions,
   operation: string = 'request'
 ): Promise<Response> => {
-  const headers = {
-    ...(options && options.headers ? options.headers : {}),
-    Authorization: `Bearer ${requireAccessToken()}`,
-  };
+  const token = await requireAccessToken();
+  const makeRequest = (authToken: string) =>
+    fetch(url, {
+      ...options,
+      headers: {
+        ...(options && options.headers ? options.headers : {}),
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
   let response;
   try {
-    response = await fetch(url, { ...options, headers });
+    response = await makeRequest(token);
+    if (response.status === 401) {
+      expireToken();
+      const account = await restoreGoogleDriveSession();
+      if (account) response = await makeRequest(accessToken);
+    }
   } catch (error) {
     throw new Error(
       `Google Drive ${operation} failed: ${error.message || String(error)}. Check your network connection and browser permissions.`
@@ -99,50 +321,16 @@ export const connectGoogleDrive = async (
   if (!trimmedClientId.endsWith('.apps.googleusercontent.com')) {
     throw new Error('Enter a valid Google OAuth web client ID.');
   }
-  await preloadGoogleIdentity();
-  const google = (window: any).google;
-  if (!google || !google.accounts || !google.accounts.oauth2) {
-    throw new Error('Google account sign-in could not be loaded.');
-  }
-
-  const tokenResponse = await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(
-        new Error(
-          'Google sign-in did not respond. Check that popups are allowed and try again.'
-        )
-      );
-    }, 90000);
-    const fail = error => {
-      clearTimeout(timeout);
-      reject(error);
-    };
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: trimmedClientId,
-      scope: DRIVE_SCOPE,
-      callback: response => {
-        if (!response || response.error || !response.access_token) {
-          fail(new Error(response?.error_description || response?.error || 'Google authorization failed.'));
-          return;
-        }
-        clearTimeout(timeout);
-        resolve(response);
-      },
-      error_callback: response => {
-        fail(new Error(response?.message || response?.type || 'Google authorization popup was closed.'));
-      },
-    });
-    client.requestAccessToken({ prompt: 'select_account' });
+  connectionGeneration++;
+  const tokenResponse = await requestDriveAccessToken({
+    clientId: trimmedClientId,
+    prompt: 'select_account',
+    timeoutMs: 90000,
   });
-
-  accessToken = tokenResponse.access_token;
-  accessTokenExpiresAt = Date.now() + Number(tokenResponse.expires_in || 3600) * 1000 - 60000;
+  const account = await getAccountForToken(tokenResponse.access_token);
   setGoogleDriveClientId(trimmedClientId);
-  const response = await driveFetch(`${DRIVE_API}/about?fields=user(emailAddress,displayName)`);
-  const account = await response.json();
-  connectedAccount = account.user?.emailAddress || account.user?.displayName || 'Google Drive';
-  accountListeners.forEach(listener => listener());
-  return connectedAccount;
+  applyToken(tokenResponse, account);
+  return account;
 };
 
 export type DriveProjectFile = {|
