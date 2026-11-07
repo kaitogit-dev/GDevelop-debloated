@@ -588,7 +588,6 @@ export default class PixiResourcesLoader {
             ', '
           )}. Skipping unload for it.`
         );
-        return;
       } else {
         // Texture should be unloaded.
         if (
@@ -781,7 +780,11 @@ export default class PixiResourcesLoader {
             preferCreateImageBitmap: false,
             crossOrigin: determineCrossOrigin(url),
           });
-          const loadedTexture = await PIXI.Assets.load(url);
+          const loadedTexture = await PIXI.Assets.load(
+            url.startsWith('blob:') || url.startsWith('data:')
+              ? { src: url, loadParser: 'loadTextures' }
+              : url
+          );
           if (!loadedTexture) {
             throw new Error(
               `Texture loading for "${url}" returned null/undefined.`
