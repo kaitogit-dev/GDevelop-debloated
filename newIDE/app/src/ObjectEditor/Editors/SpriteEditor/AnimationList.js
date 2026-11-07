@@ -744,6 +744,7 @@ const AnimationList: React.ComponentType<{
         }
 
         notifyAnimationsChanged();
+        resourceManagementProps.onResourceUsageChanged();
 
         adaptCollisionMaskIfNeeded();
         if (onObjectUpdated) onObjectUpdated();

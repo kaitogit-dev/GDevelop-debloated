@@ -468,6 +468,7 @@ const SpritesList = ({
         resourceManagementProps.onNewResourcesAdded();
       }
 
+      resourceManagementProps.onResourceUsageChanged();
       if (selectedResources.length && onSpriteUpdated) onSpriteUpdated();
       if (directionSpritesCountBeforeAdding === 0 && onFirstSpriteUpdated) {
         // If there was no sprites before, we can assume the first sprite was added.
