@@ -40,6 +40,14 @@ const getMimeType = (filename: string): string => {
   return types[extension] || 'application/octet-stream';
 };
 
+const resourceBlobCache: Map<string, Blob> = new Map();
+const maxResourceBlobCacheBytes = 64 * 1024 * 1024;
+
+const shouldEmbedResource = (url: string): boolean =>
+  isBlobURL(url) ||
+  url.startsWith('data:') ||
+  checkIfIsGDevelopCloudBucketUrl(url);
+
 export const archiveProjectForGoogleDrive = async (
   project: gdProject
 ): Promise<Blob> => {
@@ -50,30 +58,77 @@ export const archiveProjectForGoogleDrive = async (
   const blobFiles = [];
   const manifest = {};
 
+  const activeUrls: Set<string> = new Set();
   for (const resource of resources) {
-    const resourceUrl = resource.file;
-    if (!resourceUrl || typeof resourceUrl !== 'string') continue;
-    const mustStoreResource =
-      isBlobURL(resourceUrl) ||
-      resourceUrl.startsWith('data:') ||
-      checkIfIsGDevelopCloudBucketUrl(resourceUrl);
-    if (!mustStoreResource) {
-      if (!isURL(resourceUrl)) {
-        throw new Error(`Cannot save relative resource "${resourceUrl}" to Google Drive.`);
-      }
-      continue;
+    const url = resource.file;
+    if (!url || typeof url !== 'string') continue;
+    if (shouldEmbedResource(url)) {
+      activeUrls.add(url);
+    } else if (!isURL(url)) {
+      throw new Error(`Cannot save relative resource "${url}" to Google Drive.`);
     }
+  }
 
+  for (const url of resourceBlobCache.keys()) {
+    if (!activeUrls.has(url)) resourceBlobCache.delete(url);
+  }
+
+  const blobsByUrl: Map<string, Blob> = new Map(resourceBlobCache);
+  const missingUrls = Array.from(activeUrls).filter(
+    url => !blobsByUrl.has(url)
+  );
+  if (missingUrls.length) {
     const downloads = await downloadUrlsToBlobs({
-      urlContainers: [{ url: resourceUrl }],
+      urlContainers: missingUrls.map(url => ({ url })),
       onProgress: () => {},
     });
-    const { blob, error } = downloads[0];
-    if (!blob || error) {
-      throw new Error(`Cannot save resource "${resource.name}": ${error ? error.message : 'unknown download error'}`);
+
+    for (const { item, blob, error } of downloads) {
+      if (error || !blob) {
+        throw new Error(
+          `Cannot save resource "${item.url}": ${error
+            ? error.message
+            : 'Unknown download error'}`
+        );
+      }
+      blobsByUrl.set(item.url, blob);
+      if (
+        (isBlobURL(item.url) || item.url.startsWith('data:')) &&
+        blob.size <= maxResourceBlobCacheBytes
+      ) {
+        resourceBlobCache.set(item.url, blob);
+      }
+    }
+  }
+
+  let cachedBytes = 0;
+  for (const blob of resourceBlobCache.values()) cachedBytes += blob.size;
+  while (cachedBytes > maxResourceBlobCacheBytes) {
+    const oldestUrl = resourceBlobCache.keys().next().value;
+    if (!oldestUrl) break;
+    const oldestBlob = resourceBlobCache.get(oldestUrl);
+    if (!oldestBlob) break;
+    cachedBytes -= oldestBlob.size;
+    resourceBlobCache.delete(oldestUrl);
+  }
+
+  for (const resource of resources) {
+    const resourceUrl = resource.file;
+    if (
+      !resourceUrl ||
+      typeof resourceUrl !== 'string' ||
+      !shouldEmbedResource(resourceUrl)
+    )
+      continue;
+
+    const blob = blobsByUrl.get(resourceUrl);
+    if (!blob) {
+      throw new Error(`Cannot save resource "${resource.name}": file not found.`);
     }
     const originalResource = resourcesByName.getResource(resource.name);
-    const { extension } = parseLocalFilePathOrExtensionFromMetadata(originalResource);
+    const { extension } = parseLocalFilePathOrExtensionFromMetadata(
+      originalResource
+    );
     const filename = sanitizeFilename(resource.name || 'resource');
     const suffix = filename.match(/\.[a-z0-9]+$/i)
       ? ''
@@ -100,6 +155,7 @@ export const archiveProjectForGoogleDrive = async (
     ],
     blobFiles,
     basePath: '/',
+    blobCompressionLevel: 0,
     onProgress: () => {},
   });
 };

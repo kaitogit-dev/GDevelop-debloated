@@ -97,12 +97,14 @@ export const archiveFiles = async ({
   basePath,
   onProgress,
   sizeLimit,
+  blobCompressionLevel,
 }: {|
   textFiles: Array<TextFileDescriptor>,
   blobFiles: Array<BlobFileDescriptor>,
   basePath: string,
   onProgress: (count: number, total: number) => void,
   sizeLimit?: number,
+  blobCompressionLevel?: number,
 |}): Promise<Blob> => {
   const zipJs: ZipJs = await initializeZipJs();
 
@@ -131,7 +133,10 @@ export const archiveFiles = async ({
               },
               () => {
                 /* We don't track progress at the file level */
-              }
+              },
+              blobCompressionLevel === undefined
+                ? undefined
+                : { level: blobCompressionLevel }
             );
           },
           () => {

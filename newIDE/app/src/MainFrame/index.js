@@ -5204,6 +5204,13 @@ const MainFrame = (props: Props): React.MixedElement => {
         return;
       }
 
+      if (
+        getStorageProvider().internalName === 'GoogleDrive' &&
+        !hasUnsavedChanges
+      ) {
+        return currentFileMetadata;
+      }
+
       if (checkedOutVersionStatus) {
         const shouldRestoreCheckedOutVersion = await showConfirmation({
           title: t`Restore this version`,
@@ -5327,6 +5334,7 @@ const MainFrame = (props: Props): React.MixedElement => {
     [
       saveWithBackgroundSerializer,
       isSavingProject,
+      hasUnsavedChanges,
       currentProject,
       currentProjectRef,
       currentFileMetadata,

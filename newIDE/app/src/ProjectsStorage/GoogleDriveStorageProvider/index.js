@@ -37,9 +37,10 @@ const onSaveProject = async (
   project: gdProject,
   fileMetadata: FileMetadata
 ): Promise<{| wasSaved: boolean, fileMetadata: FileMetadata |}> => {
-  const remoteFile = await getGoogleDriveProjectMetadata(
-    fileMetadata.fileIdentifier
-  );
+  const [remoteFile, archive] = await Promise.all([
+    getGoogleDriveProjectMetadata(fileMetadata.fileIdentifier),
+    archiveProjectForGoogleDrive(project),
+  ]);
   if (
     fileMetadata.lastModifiedDate &&
     remoteFile.modifiedTime &&
@@ -49,7 +50,6 @@ const onSaveProject = async (
       'This Google Drive project changed since it was opened. Use Save As to avoid overwriting the newer copy.'
     );
   }
-  const archive = await archiveProjectForGoogleDrive(project);
   const file = await saveGoogleDriveProject({
     id: fileMetadata.fileIdentifier,
     name: getDriveFilename(project.getName()),
