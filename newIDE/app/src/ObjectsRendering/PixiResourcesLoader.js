@@ -807,8 +807,9 @@ export default class PixiResourcesLoader {
     await Promise.all([
       ...imageResources.map(async resource => {
         const resourceName = resource.getName();
+        let url = '';
         try {
-          const url = ResourcesLoader.getResourceFullUrl(
+          url = ResourcesLoader.getResourceFullUrl(
             project,
             resourceName,
             {
