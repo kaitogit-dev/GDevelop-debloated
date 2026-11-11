@@ -176,6 +176,24 @@ const pendingResourceReloadCleanupTimers: {
 } = {};
 const RESOURCE_RELOAD_DEDUP_COOLDOWN_MS = 500;
 
+let failedPixiImageLoads: {
+  [resourceName: string]: { url: string, attempts: number, retryAfter: number },
+} = {};
+
+const registerFailedPixiImageLoad = (
+  resourceName: string,
+  url: string
+): void => {
+  const previous = failedPixiImageLoads[resourceName];
+  const attempts =
+    previous && previous.url === url ? previous.attempts + 1 : 1;
+  failedPixiImageLoads[resourceName] = {
+    url,
+    attempts,
+    retryAfter: Date.now() + 500,
+  };
+};
+
 // $FlowFixMe[value-as-type]
 const createInvalidModel = (): GLTF => {
   /**
@@ -257,6 +275,19 @@ const determineCrossOrigin = (url: string) => {
   // to not having `crossorigin` at all would NOT work because the browser would taint the
   // loaded resource so that it can't be read/used in a canvas (it's only working for display `<img>` on screen).
   return 'anonymous';
+};
+
+const isInlineImageUrl = (url: string): boolean =>
+  url.startsWith('blob:') || url.startsWith('data:');
+
+const createInlinePixiTexture = (url: string): any => {
+  const image = new Image();
+  image.crossOrigin = determineCrossOrigin(url);
+  const texture = PIXI.Texture.from(image, {
+    resourceOptions: { autoLoad: false },
+  });
+  image.src = url;
+  return texture;
 };
 
 const getPixiScaleMode = (imageResource: gdImageResource): number =>
@@ -409,6 +440,7 @@ export default class PixiResourcesLoader {
     spineDataPromises = {};
     ongoingResourceReloads = null;
     pendingResourceReloadPromises = {};
+    failedPixiImageLoads = {};
 
     const logUnloadError = (error: Error) => {
       console.warn('Error while unloading a resource (ignored):', error);
@@ -591,6 +623,14 @@ export default class PixiResourcesLoader {
       } else {
         // Texture should be unloaded.
         if (
+          loadedEntry &&
+          loadedEntry.loadedFromUrl &&
+          isInlineImageUrl(loadedEntry.loadedFromUrl) &&
+          loadedTexture !== invalidTexture &&
+          loadedTexture !== loadingTexture
+        ) {
+          if (!loadedTexture.destroyed) loadedTexture.destroy(true);
+        } else if (
           loadedTexture.textureCacheIds &&
           loadedTexture !== invalidTexture &&
           loadedTexture !== loadingTexture
@@ -775,34 +815,56 @@ export default class PixiResourcesLoader {
               isResourceForPixi: true,
             }
           );
-          PIXI.Assets.setPreferences({
-            preferWorkers: false,
-            preferCreateImageBitmap: false,
-            crossOrigin: determineCrossOrigin(url),
-          });
-          const loadedTexture = await PIXI.Assets.load(
-            url.startsWith('blob:') || url.startsWith('data:')
-              ? { src: url, loadParser: 'loadTextures' }
-              : url
-          );
+          let loadedTexture;
+          if (isInlineImageUrl(url)) {
+            loadedTexture = createInlinePixiTexture(url);
+            await loadedTexture.baseTexture.resource.load();
+          } else {
+            PIXI.Assets.setPreferences({
+              preferWorkers: false,
+              preferCreateImageBitmap: false,
+              crossOrigin: determineCrossOrigin(url),
+            });
+            loadedTexture = await PIXI.Assets.load(url);
+          }
           if (!loadedTexture) {
             throw new Error(
               `Texture loading for "${url}" returned null/undefined.`
             );
           }
 
+          if (
+            !resourcesManager.hasResource(resourceName) ||
+            ResourcesLoader.getResourceFullUrl(project, resourceName, {
+              isResourceForPixi: true,
+            }) !== url
+          ) {
+            if (isInlineImageUrl(url) && !loadedTexture.destroyed)
+              loadedTexture.destroy(true);
+            return;
+          }
           loadedOrLoadingPixiTextures.set({
             resourceName,
             pixiTexture: loadedTexture,
             loadedFromUrl: url,
           });
+          delete failedPixiImageLoads[resourceName];
           // TODO What if 2 assets share the same file with different settings?
           applyPixiTextureSettings(resource, loadedTexture);
         } catch (error) {
-          loadedOrLoadingPixiTextures.set({
-            resourceName,
-            pixiTexture: invalidTexture,
-          });
+          if (
+            resourcesManager.hasResource(resourceName) &&
+            ResourcesLoader.getResourceFullUrl(project, resourceName, {
+              isResourceForPixi: true,
+            }) === url
+          ) {
+            registerFailedPixiImageLoad(resourceName, url);
+            loadedOrLoadingPixiTextures.set({
+              resourceName,
+              pixiTexture: invalidTexture,
+              loadedFromUrl: url,
+            });
+          }
           console.error(
             `Unable to load file ${resource.getFile()} for image resource ${resourceName}:`,
             error ? error : '(unknown error)'
@@ -873,9 +935,10 @@ export default class PixiResourcesLoader {
    * if this event is triggered.
    */
   static getPIXITexture(project: gdProject, resourceName: string): any {
-    const existingPixiTexture = loadedOrLoadingPixiTextures.getPixiTexture(
-      resourceName
-    );
+    const existingEntry = loadedOrLoadingPixiTextures.get(resourceName);
+    const existingPixiTexture = existingEntry
+      ? existingEntry.pixiTexture
+      : undefined;
     if (existingPixiTexture) {
       // Extra safety: If the texture's baseTexture was destroyed somehow,
       // evict it from the cache and recreate it below.
@@ -889,6 +952,25 @@ export default class PixiResourcesLoader {
         loadedOrLoadingPixiTextures.delete(resourceName);
 
         // Then we let the new texture be loaded below.
+      } else if (existingPixiTexture === invalidTexture) {
+        const currentUrl = project
+          .getResourcesManager()
+          .hasResource(resourceName)
+          ? ResourcesLoader.getResourceFullUrl(project, resourceName, {
+              isResourceForPixi: true,
+            })
+          : null;
+        const failure = failedPixiImageLoads[resourceName];
+        if (
+          currentUrl &&
+          (!failure ||
+            failure.url !== currentUrl ||
+            (failure.attempts < 3 && Date.now() >= failure.retryAfter))
+        ) {
+          loadedOrLoadingPixiTextures.delete(resourceName);
+        } else {
+          return existingPixiTexture;
+        }
       } else {
         return existingPixiTexture;
       }
@@ -906,17 +988,21 @@ export default class PixiResourcesLoader {
     const url = ResourcesLoader.getResourceFullUrl(project, resourceName, {
       isResourceForPixi: true,
     });
-    const pixiTexture = PIXI.Texture.from(url, {
-      resourceOptions: {
-        crossorigin: determineCrossOrigin(url),
-        autoLoad: false,
-      },
-    });
+    const pixiTexture = isInlineImageUrl(url)
+      ? createInlinePixiTexture(url)
+      : PIXI.Texture.from(url, {
+          resourceOptions: {
+            crossorigin: determineCrossOrigin(url),
+            autoLoad: false,
+          },
+        });
     if (!pixiTexture) {
       console.error(`Texture loading for ${url} returned nothing`);
+      registerFailedPixiImageLoad(resourceName, url);
       loadedOrLoadingPixiTextures.set({
         resourceName,
         pixiTexture: invalidTexture,
+        loadedFromUrl: url,
       });
       return invalidTexture;
     }
@@ -925,11 +1011,25 @@ export default class PixiResourcesLoader {
       pixiTexture,
       loadedFromUrl: url,
     });
-    pixiTexture.baseTexture.resource.load().catch(error => {
+    pixiTexture.baseTexture.resource.load().then(() => {
+      if (loadedOrLoadingPixiTextures.getPixiTexture(resourceName) === pixiTexture)
+        delete failedPixiImageLoads[resourceName];
+    }).catch(error => {
       console.error(`Unable to load texture from url ${url}:`, error);
+      if (
+        loadedOrLoadingPixiTextures.getPixiTexture(resourceName) !==
+          pixiTexture ||
+        !project.getResourcesManager().hasResource(resourceName) ||
+        ResourcesLoader.getResourceFullUrl(project, resourceName, {
+          isResourceForPixi: true,
+        }) !== url
+      )
+        return;
+      registerFailedPixiImageLoad(resourceName, url);
       loadedOrLoadingPixiTextures.set({
         resourceName,
         pixiTexture: invalidTexture,
+        loadedFromUrl: url,
       });
     });
 

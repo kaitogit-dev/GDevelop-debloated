@@ -237,7 +237,19 @@ export default class RenderedSpriteInstance extends RenderedInstance {
       );
     }
 
-    if (this._renderedAnimation !== animation || isCurrentTextureDestroyed) {
+    const isRecoveredTextureAvailable =
+      currentTexture === this._pixiResourcesLoader.getInvalidPIXITexture() &&
+      this._sprite &&
+      this._pixiResourcesLoader.getPIXITexture(
+        this._project,
+        this._sprite.getImageName()
+      ) !== currentTexture;
+
+    if (
+      this._renderedAnimation !== animation ||
+      isCurrentTextureDestroyed ||
+      isRecoveredTextureAvailable
+    ) {
       this.updatePIXITextureAndSprite();
     } else {
       this.updatePIXISprite();
